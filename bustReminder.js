@@ -207,7 +207,7 @@
       // console.log('FETCH BUST DATA'); // TEST
       API_KEY = API_KEY || getApiKey();
 
-      const url = `https://api.torn.com/user/2428902?selections=log&log=5360&key=${API_KEY}`;
+      const url = `https://api.torn.com/user/?selections=log&log=5360&key=${API_KEY}`;
 
       const response = await fetch(url);
       const data = await response.json();
