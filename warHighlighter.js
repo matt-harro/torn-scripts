@@ -1,7 +1,7 @@
 /** @format */
 
 // ==UserScript==
-// @name         War Offline Okay Highlight
+// @name         Torn War Highlighter - offline/idle & okay
 // @namespace    http://torn.city.com.dot.com.com
 // @version      1.0
 // @description  Sexily highlights war enemies that are 'offline | idle' and 'Okay'.
@@ -10,14 +10,28 @@
 // @license      MIT
 // ==/UserScript==
 
+/*  
+    - any questions hit up IronHydeDragon [2420802]
+    
+    Features:
+      - Sexy rendering: using torn color pallette
+      - Updates every 0.5s
+
+    Possible Future Features
+    - Exclude enemies above (x) level
+    - Exceptions:
+      - AlwaysIncludePlayers [arrayOfPlayers] *(for players above the exclusion level that you can beat)*
+      - AlwaysExcludePlayer [arrayOfPlayers] *(for players below the exclusion level that you can NOT beat)*
+*/
+
 (function () {
   ////////  VARIABLES  ////////
-  const green = '#4b5738';
-  const greenLight = '#57693a';
+  // const green = '#4b5738';
+  // const greenLight = '#57693a';
   const greetLighter = '#85b200';
   const greenTranslucent = 'rgba(75, 85, 56, 0.9)';
-  const greenLightTranslucent = 'rgba(87,105,58, 0.9)';
-  const gray = 'rgb(34, 34, 34)';
+  // const greenLightTranslucent = 'rgba(87,105,58, 0.9)';
+  // const gray = 'rgb(34, 34, 34)';
 
   const stylesheetHTML = `
   <style>
