@@ -15,4 +15,3 @@ const url =
     console.log(`Error while fetching Javascript code: ${error}`); // TEST
   }
 })();
-c;
