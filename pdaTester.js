@@ -1,14 +1,18 @@
-/** @format */
+//////// PDA TESTING SCRIPT ////////
+// Change the url to the raw text url you desire
+const url =
+  'https://raw.githubusercontent.com/matt-harro/torn-scripts/master/alert.js';
 
-// ==UserScript==
-// @name         PDA Test Script
-// @namespace    http://torn.city.com.dot.com.com
-// @version      0.1
-// @description  Guess how many busts you can do without getting jailed
-// @author       Ironhydedragon
-// @match        https://www.torn.com/*
-// @license      MIT
-// ==/UserScript==
+(async function () {
+  try {
+    const response = await PDA_httpGet(url);
+    const code = response.responseText;
 
-// URL to fetch the raw userscript from 
-const url = 
+    await PDA_evaluateJavascript(code);
+
+    console.log('JavaScript code has been fetched and executed');
+  } catch (error) {
+    console.log(`Error while fetching Javascript code: ${error}`); // TEST
+  }
+})();
+c;
