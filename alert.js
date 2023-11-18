@@ -1,1 +1,1 @@
-alert('😎 Your script is working!')
+alert('😎 Your PDA testing script is working!')
