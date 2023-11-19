@@ -9,9 +9,11 @@
 // @match        https://www.torn.com/*
 // @license      MIT
 // ==/UserScript==
+
 console.log('😎 START!!!!'); // TEST
 
 ////////  GLOBAL VARIABLES
+////  State
 let GLOBAL_BUST_STATE = {
   userSettings: {
     reminderLimits: {
@@ -23,8 +25,23 @@ let GLOBAL_BUST_STATE = {
   penaltyThreshold: 0,
   availableBusts: 0,
   myDevice: undefined,
-  isInit: false,
 };
+
+////  Colors
+const red = '#E54C19';
+const redLight = 'rgb(255, 168, 168)';
+
+const orange = '#B25900';
+const orangeLight = '#FFBF00';
+
+const green = ''; // link color
+const greenLight = '#85b200'; // Icon Color
+
+const white = 'rgb(51, 51, 51)';
+
+////  SVG Gradients
+const greenSvgGradient = 'url(#sidebar_svg_gradient_regular_green_mobile';
+const orangeSvgGradient = 'url(#svg_status_idle';
 
 const PDA_API_KEY = '###PDA-APIKEY###';
 const isPDA = !/^(###).+(###)$/.test(PDA_API_KEY);
@@ -35,12 +52,12 @@ function createTimestampsArray(data) {
   console.log('CREATE TIMESTAMPS'); // TEST
   let timestamps = [];
 
+  console.log('ts-data.log', data.log); // TEST
   for (const entry in data.log) {
     timestamps.push(data.log[entry].timestamp);
-    console.log('entry', entry); // TEST
+    // console.log('entry', entry); // TEST
   }
 
-  console.log('ts-data', data); // TEST
   console.log('ts', timestamps); // TEST
   return timestamps;
 }
@@ -67,17 +84,17 @@ function calcPenaltyScore(timestampsArray) {
   return Math.floor(score);
 }
 
-function calcPenaltyThreshold(timestampArray) {
+function calcPenaltyThreshold(timestampsArray) {
   console.log('CALC PT'); // TEST
   const period = 24 * 60 * 60 * 3;
   let longestSequence = 0;
   let currentSequence = 1;
-  let currentMin = timestampArray[0];
-  let currentMax = timestampArray[0];
+  let currentMin = timestampsArray[0];
+  let currentMax = timestampsArray[0];
   let firstTimestamp;
 
-  for (let i = 1; i < timestampArray.length; i++) {
-    const TS = timestampArray[i];
+  for (let i = 1; i < timestampsArray.length; i++) {
+    const TS = timestampsArray[i];
     if (currentMin - TS <= period && currentMax - TS <= period) {
       currentSequence++;
       currentMin = Math.min(currentMin, TS);
@@ -94,12 +111,12 @@ function calcPenaltyThreshold(timestampArray) {
   }
 
   let currentMaxScore = 0;
-  for (let i = 0; i < timestampArray.length - longestSequence; i++) {
+  for (let i = 0; i < timestampsArray.length - longestSequence; i++) {
     let score = 0;
     let localScore = 0;
-    const initial_timestamp = timestampArray[i];
+    const initial_timestamp = timestampsArray[i];
     for (let j = 0; j < longestSequence; j++) {
-      const hours = (initial_timestamp - timestampArray[i + j]) / 60 / 60;
+      const hours = (initial_timestamp - timestampsArray[i + j]) / 60 / 60;
       const tenHours = calcTenHours(hours);
       localScore = 128 / Math.pow(2, tenHours);
       score += localScore;
@@ -117,16 +134,21 @@ function calcAvailableBusts(penaltyScore, penaltyThreshold) {
 async function fetchBustsData(apiKey) {
   try {
     console.log('FETCH BUST DATA'); // TEST
-    let error = null;
-
     const url = `https://api.torn.com/user/?selections=log&log=5360&key=${apiKey}`;
 
     const response = await fetch(url);
     const data = await response.json();
 
+    console.log('res', response); // TEST
     console.log('data', data); // TEST
     if (data.error) {
-      throw new Error(data.error);
+      if (
+        data.error.error === 'Incorrect key' ||
+        data.error.error === 'Access level of this key is not high enough'
+      ) {
+        throw new Error(`Error: ${data.error.error}`);
+      }
+      throw new Error('Something went wrong');
     }
     return data;
   } catch (err) {
@@ -154,7 +176,12 @@ function getGlobalBustState() {
 }
 function deleteGlobalBustState() {
   GLOBAL_BUST_STATE = {
-    userSettings: {},
+    userSettings: {
+      reminderLimits: {
+        redLimit: 0,
+        greenLimit: 3,
+      },
+    },
     penaltyScore: 0,
     penaltyThreshold: 0,
     availableBusts: 0,
@@ -163,64 +190,20 @@ function deleteGlobalBustState() {
   localStorage.removeItem('bustrApiKey');
 }
 
-// function setReminderLimits(limitsObj, currentState) {
-//   currentState = currentState || getGlobalBustState();
-//   const redLimit =
-//     limitsObj.redLimit || currentState.userSettings.reminderLimits.red;
-//   const greenLimit =
-//     limitsObj.greenLimit || currentState.userSettings.reminderLimits.green;
-
-//   const newReminderLimits = {
-//     ...currentState.userSettings.reminderLimits,
-//     redLimit,
-//     greenLimit,
-//   };
-
-//   GLOBAL_BUST_STATE = {
-//     ...currentState,
-//     userSettings: {
-//       ...currentState.userSettings,
-//       reminderLimits: newReminderLimits,
-//     },
-//   };
-// }
-
-// function getReminderLimits() {
-//   return GLOBAL_BUST_STATE.userSettings.reminderLimits;
-// }
-
-// function setIsInit(bool = false, currentState) {
-//   console.log('SET IS INIT'); // TEST
-//   currentState = currentState || getGlobalBustState();
-
-//   GLOBAL_BUST_STATE = { ...GLOBAL_BUST_STATE, isInit: bool };
-// }
-// function getIsInit(bool = false, currentState) {
-//   console.log('GET IS INIT'); // TEST
-//   return GLOBAL_BUST_STATE.isInit;
-// }
-
-// function setMyDeviceType(width, currentState) {
-//   // console.log('SET MY DEVICE'); // TEST
-//   width = width || window.innerWidth;
-//   currentState = currentState || getGlobalBustState();
-
-//   const myDeviceType = width > 1000 ? 'Desktop' : 'Mobile';
-
-//   const newState = { ...currentState, myDevice: myDeviceType };
-//   setGlobalBustState(newState);
-// }
 function getMyDeviceType() {
-  const width = window.innerWidth;
+  console.log('GET MY DEVICE'); // TEST
+  width = window.innerWidth;
+  if (width === 0) getMyDeviceType();
+
   return width > 1000 ? 'Desktop' : 'Mobile';
 }
 
 function setApiKey(apiKey) {
-  console.log('SET API KEY'); // TEST
+  console.log('SET API KEY', apiKey); // TEST
   localStorage.setItem('bustrApiKey', JSON.stringify(apiKey));
 }
 function getApiKey() {
-  console.log('GET API KEY'); // TEST
+  console.log('GET API KEY', JSON.parse(localStorage.getItem('bustrApiKey'))); // TEST
   if (!localStorage.getItem('bustrApiKey')) return;
   return JSON.parse(localStorage.getItem('bustrApiKey'));
 }
@@ -270,16 +253,112 @@ function getAvailableBusts() {
 }
 
 ////////  VIEW  ////////
-////  Colors
-const red = '#fa8e8e';
-const greenLight = '#85b200'; // Icon Color
-const green = ''; // link color
-const white = 'rgb(51, 51, 51)';
-
 ////  Stylesheet
 const bustrStylesheetHTML = `<style>
-    
-  </style>`;
+    .bustr--green {
+      --color: ${green}
+    }
+    .bustr--orange {
+      --color: ${orange}
+    }
+    .bustr--red {
+      --color: ${red}
+    }
+    .dark-mode .bustr--green {
+      --color: ${greenLight}
+    }
+    .dark-mode .bustr--orange {
+      --color: ${orangeLight}
+    }
+    .dark-mode .bustr--red {
+      --color: ${redLight}
+    }
+    #bustr-form.header-wrapper-top {
+      display: flex;
+    }
+    #bustr-form.header-wrapper-top .container {
+      display: flex;
+      justify-content: start;
+      align-items: center;
+      pading-left: 20px;
+    }
+
+    #bustr-form.header-wrapper-top h2 {
+      display: block;
+      text-align: center;
+      margin: 0;
+      width: 172px;
+    }
+
+    #bustr-form.header-wrapper-top input {
+      background: linear-gradient(0deg,#111,#000);
+      border-radius: 5px;
+      box-shadow: 0 1px 0 hsla(0,0%,100%,.102);
+      box-sizing: border-box;
+      color: #9f9f9f;
+      display: inline;
+      font-weight: 400;
+      height: 24px;
+      width: clamp(170px, 50%, 250px);
+      margin: 0 0 0 21px;
+      outline: none;
+      padding: 0 10px 0 10px;
+      
+      font-size: 12px;
+      font-style: italic; 
+      vertical-align: middle;
+      border: 0;
+      text-shadow: none;
+      z-index: 100;
+    }
+    #bustr-form.header-wrapper-top a {
+      margin: 0 8px;
+    }
+
+    #nav-jail .bustr-stats,
+    #bustr-context .bustr-stats {
+      color: var(--color, inherit);
+    }
+
+    #bustr-context.contextMenu___bjhoL {
+      display: none;
+      color: var(--color);
+      left: unset;
+      right: -74px;
+    }
+    .contextMenuActive___e6i_B #bustr-context.contextMenu___bjhoL {
+      display: flex;
+    }
+    #bustr-context.contextMenu___bjhoL .arrow___tKP13 {
+      right: unset;
+      left: -6px;
+      border-width: 8px 6px 8px 0;
+      border-color: transparent #444 transparent transparent;
+    }
+    #bustr-context.contextMenu___bjhoL .arrow___tKP13:before {
+      border-color: transparent #373636 transparent transparent;
+      border-width: 6px 5px 6px 0;
+      content: "";
+      left: unset;
+      right: -6px;
+      top: -6px;
+    }
+
+    @media screen and (max-width:1000px) {
+      #bustr-form.header-wrapper-top h2 {
+        width: 148px;
+      }
+      #bustr-form.header-wrapper-top input {
+        margin-left: 10px;
+      }
+    }
+    @media screen and (max-width:784px) {
+      #bustr-form.header-wrapper-top h2 {
+        font-size: 16px;
+        width: 80px;
+      }
+    }
+    </style>`;
 function renderBustrStylesheet() {
   console.log('RENDER STYLESHEET'); // TEST
 
@@ -287,45 +366,66 @@ function renderBustrStylesheet() {
   headEl.insertAdjacentHTML('beforeend', bustrStylesheetHTML);
 }
 
-////  render style classes
-function renderBustrClass() {
-  console.log('RENDER BUSTR CLASS'); // TEST
-
-  const bodyEl = document.querySelector('body');
-  bodyEl.classList.add('bustr');
-}
-function renderBustrColorClasses(availableBusts) {
+function renderBustrColorClass(availableBusts) {
   console.log('RENDER BUSTER COLOR'); // TEST
+  console.log('userSettings', getUserSettings()); // TEST
 
-  const navJailEl = document.querySelector('#nav-jail');
+  const navJailParentEl = document.querySelector('#nav-jail').parentElement;
 
-  if (availableBusts < 1) {
-    navJailEl.classList.add('bustr--red');
+  if (+availableBusts <= getUserSettings().reminderLimits.redLimit) {
+    navJailParentEl.classList.add('bustr--red');
+    return;
   }
-  if (availableBusts >= 1) {
-    navJailEl.classList.add('available___ZS04X');
+
+  if (+availableBusts >= getUserSettings().reminderLimits.greenLimit) {
+    navJailParentEl.classList.add('available___ZS04X', 'bustr--green');
+    return;
+  }
+
+  if (
+    availableBusts > getUserSettings().reminderLimits.redLimit &&
+    availableBusts < reminderLimits.greenLimit
+  ) {
+    navJailParentEl.classList.add('bustr--orange');
   }
 }
+//// Init form view
+function renderBustrForm() {
+  console.log('RENDER BUSTR FORM'); // TEST
+  const topHeaderBannerEl = document.querySelector('#topHeaderBanner');
+  const bustrFormHTML = `
+      <div id="bustr-form" class="header-wrapper-top">
+        <div class="container clear-fix">
+          <h2>Bustr API</h2>
+          <input
+            id="bustr-form__input"
+            type="text"
+            placeholder="Enter a full-acces API key..."
+          />
+          <a href="#" id="bustr-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
+        </div>
+      </div>`;
 
-function renderJailIcon(availableBusts) {
-  console.log('REPLACE JAIL ICON'); // TEST
-  let fill =
-    availableBusts <= 0
-      ? red
-      : 'url(#sidebar_svg_gradient_regular_green_mobile';
-  const jailIconEl = document.querySelector('#nav-jail svg');
-  const jailIconContainerEl =
-    document.querySelector('#nav-jail svg').parentElement;
-
-  const greenJailHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="default___XXAGt " filter fill="${fill}" stroke="transparent" stroke-width="0" width="17" height="17" viewBox="0 1 17 17">
-        <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z" filter="url(#svg_sidebar_mobile)"></path>
-        <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z"></path>
-      </svg>`;
-
-  jailIconEl.remove();
-  jailIconContainerEl.insertAdjacentHTML('afterbegin', greenJailHTML);
+  topHeaderBannerEl.insertAdjacentHTML('afterbegin', bustrFormHTML);
 }
+
+// function renderJailIcon() {
+//   console.log('REPLACE JAIL ICON'); // TEST
+//   const fill = 'url(#sidebar_svg_gradient_regular_green_mobile';
+
+//   const jailIconEl = document.querySelector('#nav-jail svg');
+//   const jailIconContainerEl =
+//     document.querySelector('#nav-jail svg').parentElement;
+
+//   const greenJailHTML = `
+//       <svg xmlns="http://www.w3.org/2000/svg" class="default___XXAGt " filter fill="${fill}" stroke="transparent" stroke-width="0" width="17" height="17" viewBox="0 1 17 17">
+//         <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z" filter="url(#svg_sidebar_mobile)"></path>
+//         <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z"></path>
+//       </svg>`;
+
+//   jailIconEl.remove();
+//   jailIconContainerEl.insertAdjacentHTML('afterbegin', greenJailHTML);
+// }
 
 function renderBustrStats(statsObj) {
   for (const [key, value] of Object.entries(statsObj)) {
@@ -340,9 +440,9 @@ function renderBustrDesktopView() {
 
   const jailLinkEl = document.querySelector('#nav-jail a');
   const statsHTML = `
-    <span class="amount___p8QZX bustr-stats">
-      <span class="bustr-stats__penaltyScore">#</span>/<span class="bustr-stats__penaltyThreshold">#</span>:<span class="bustr-stats__availableBusts">#</span>
-    </span>`;
+      <span class="amount___p8QZX bustr-stats">
+        <span class="bustr-stats__penaltyScore">#</span>/<span class="bustr-stats__penaltyThreshold">#</span>:<span class="bustr-stats__availableBusts">#</span>
+      </span>`;
 
   jailLinkEl.insertAdjacentHTML('beforeend', statsHTML);
 }
@@ -350,49 +450,38 @@ function renderBustrDesktopView() {
 //// Mobile view
 function renderMobileBustrNotification() {
   const navJailLinkEl = document.querySelector('#nav-jail a');
+  console.log('NAVJAILLINKEL', navJailLinkEl); // TEST
   const notificationHTML = `
-      <div class="mobileAmount___ua3ye bustr-notification"><span class="bustr-stats__availableBusts">#</span></div>`;
+        <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
 
   navJailLinkEl.insertAdjacentHTML('beforebegin', notificationHTML);
 }
 
 function renderBustrMobileView() {
-  console.log('RENDER MOBILE STATS'); // TEST
+  console.log('RENDER MOBILE VIEW'); // TEST
+  renderMobileBustrNotification();
 
   const bustrContextMenuHTML = `
-    <div id="bustr-context" class='contextMenu___bjhoL bustr-context-menu'>
-      <span class='linkName___FoKha bustr-stats'>
-      <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
-      </span>
-      <span class='arrow___tKP13 bustr-arrow'></span>
-    </div>`;
+      <div id="bustr-context" class='contextMenu___bjhoL bustr-context-menu'>
+        <span class='linkName___FoKha bustr-stats'>
+        <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
+        </span>
+        <span class='arrow___tKP13 bustr-arrow'></span>
+      </div>`;
 
   const navJailEl = document.querySelector('#nav-jail');
   navJailEl.insertAdjacentHTML('afterend', bustrContextMenuHTML);
-
-  renderMobileBustrNotification();
 }
 
-//// Init form view
-function renderInitForm() {
-  const contentTitleEl = document.querySelector('.content-title');
-  const initFormHTML = `
-        <span id="bustr-init-form" class="left">
-          <input id="bustr-init-form__input" type="text" placeholder="Please enter a full-acces API key" />
-          <button id="bustr-init-form__submit" type='btn' disabled>Submit</button>
-        </span>`;
-
-  contentTitleEl.children[0].insertAdjacentHTML('afterend', initFormHTML);
-}
-function dismountInitForm() {
-  document.querySelector('#bustr-init-form').remove();
+function dismountBustrForm() {
+  document.querySelector('#bustr-form').remove();
 }
 
 ////////  CONTROLLER  ////////
 //// Callback functions
 function submitFormCallback() {
-  const inputEl = document.querySelector('#bustr-init-form__input');
-  const submitBtnEl = document.querySelector('#bustr-init-form__submit');
+  const inputEl = document.querySelector('#bustr-form__input');
+  const submitBtnEl = document.querySelector('#bustr-form__submit');
 
   const apiKey = inputEl.value;
   if (apiKey.length !== 16) {
@@ -401,15 +490,13 @@ function submitFormCallback() {
     return;
   }
   setApiKey(apiKey);
-
-  dismountInitForm();
-
+  dismountBustrForm();
   window.location.reload();
 }
 
 function inputValidatorCallback(event) {
-  const inputEl = document.querySelector('#bustr-init-form__input');
-  const submitBtnEl = document.querySelector('#bustr-init-form__submit');
+  const inputEl = document.querySelector('#bustr-form__input');
+  const submitBtnEl = document.querySelector('#bustr-form__submit');
   console.log('value', inputEl.value); // TEST
   console.log('length', inputEl.value.length); // TEST
   if (event.target.value.length === 16) {
@@ -420,74 +507,80 @@ function inputValidatorCallback(event) {
     submitBtnEl.disabled = true;
   }
 }
-//// Event listeners
 
 //// Init
-function controlInit() {
-  // guard clause if an api key
-  if (isPDA) return setApiKey(PDA_API_KEY);
+function initController() {
+  console.log('INIT CONTROLLER'); // TEST
+  renderBustrStylesheet();
+
   if (getApiKey()) return;
 
-  // if no api key, render 'init form'
-  renderInitForm();
+  if (isPDA) {
+    setApiKey(PDA_API_KEY);
+    return;
+  }
+  console.log('READYSTATE', document.readyState); // TEST
+  renderBustrForm();
 
-  // listen for submit and change events
+  //// Event listeners
   document
-    .querySelector('#bustr-init-form__input')
+    .querySelector('#bustr-form__submit')
+    .addEventListener('click', submitFormCallback);
+  document
+    .querySelector('#bustr-form__input')
     .addEventListener('input', inputValidatorCallback);
   document
-    .querySelector('#bustr-init-form__submit')
-    .addEventListener('click', submitFormCallback);
+    .querySelector('#bustr-form__input')
+    .addEventListener('keyup', (event) => {
+      if (event.key === 'Enter' || event.keyCode === 13) {
+        submitFormCallback();
+      }
+    });
 }
 
 //// Load
-async function controlLoadBustr() {
+async function loadController() {
   try {
+    console.log('LOAD GUARD'); // TEST
     if (!getApiKey()) return;
+    console.log('LOAD CONTROLLER'); // TEST
 
-    //  renderStylesheet
-    renderBustrStylesheet();
-    //  if mobile, render mobile view
-    if (getMyDeviceType() === 'Mobile') {
-      renderBustrMobileView();
-    }
+    getMyDeviceType() === 'Desktop'
+      ? renderBustrDesktopView()
+      : renderBustrMobileView();
 
-    //  if desktop, do desktop renders
-    if (getMyDeviceType() === 'Desktop') {
-      renderBustrDesktopView();
-    }
-    //  get data
+    // fetch our data
     const data = await fetchBustsData(getApiKey());
 
-    // create timestamps
-    const timestampsArr = createTimestampsArray(data);
+    const timestampsArray = createTimestampsArray(data);
 
-    // calc stats
-    const stats = calcBustrStats(timestampsArr);
+    const statsObj = calcBustrStats(timestampsArray);
 
-    // render stats
-    renderBustrStats(stats);
+    setPenaltyScore(statsObj.penaltyScore);
+    setPenaltyThreshold(statsObj.penaltyThreshold);
+    setAvailableBusts(statsObj.availableBusts);
+    renderBustrStats(statsObj);
 
-    // render styling classes
-    renderBustrClass();
-    renderBustrColorClasses();
-
-    // render jail icon
-    renderJailIcon();
+    renderBustrColorClass(getAvailableBusts());
   } catch (err) {
+    // deleteApiKey();
     console.error(err); // TEST
-    alert(
-      `ERROR: ${err.error}\nYou will need to reload the page and enter a vaild full acces API Key`
-    );
-    deleteApiKey();
+    // alert(
+    //   `Error: ${err}\nPlease reload browser and enter valid full acces api key.`
+    // );
   }
 }
+window.addEventListener('load', () => {
+  console.log('WINDOW READY'); // TEST
+  console.log('READYSTATE', document.readyState); // TEST
+  initController();
+  console.log('READYSTATE', document.readyState); // TEST
+  loadController();
+});
 
-(async function () {
-  try {
-    controlInit();
-    await controlLoadBustr();
-  } catch (err) {
-    console.error(err); // TEST
-  }
-})();
+// document.addEventListener('DOMContentLoaded', function () {
+//   //do work
+//   console.log('DOM Loaded'); // TEST
+//   initController();
+//   loadController();
+// });
