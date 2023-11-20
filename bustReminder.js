@@ -28,7 +28,9 @@ let GLOBAL_BUST_STATE = {
 };
 
 const PDA_API_KEY = '###PDA-APIKEY###';
-const isPDA = !/^(###).+(###)$/.test(PDA_API_KEY);
+function isPDA() {
+  return !/^(###).+(###)$/.test(PDA_API_KEY);
+}
 
 ////  Colors
 const red = '#E54C19';
@@ -207,7 +209,7 @@ function setApiKey(apiKey) {
 function getApiKey() {
   console.log('GET API KEY'); // TEST
 
-  if (isPDA) return PDA_API_KEY;
+  if (isPDA()) return PDA_API_KEY;
 
   if (!localStorage.getItem('bustrApiKey')) return;
 
@@ -526,9 +528,9 @@ function initController() {
 
   // check if apiKey is saved
   // if saved exit function
-  console.log('IS PDA', isPDA); // TEST
+  console.log('IS PDA', isPDA()); // TEST
   console.log('IS API KEY FALSE', !getApiKey()); // TEST
-  if (isPDA && !getApiKey()) {
+  if (isPDA() && !getApiKey()) {
     console.log('🤓 SETTING PDA API KEY'); // TEST
     setApiKey(PDA_API_KEY);
   }
