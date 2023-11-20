@@ -1,7 +1,7 @@
 //////// PDA TESTING SCRIPT ////////
 // Change the url to the raw text url you desire
 const url =
-  'https://raw.githubusercontent.com/matt-harro/torn-scripts/master/alert.js';
+  'https://raw.githubusercontent.com/matt-harro/torn-scripts/dev-bustr/bustReminder.js';
 
 (async function () {
   try {

@@ -526,6 +526,9 @@ function initController() {
 
   // check if apiKey is saved
   // if saved exit function
+  if (isPDA && !getApiKey()) {
+    setApiKey(PDA_API_KEY);
+  }
   if (getApiKey()) return;
 
   // if not saved render bustr form
@@ -588,9 +591,6 @@ async function loadController() {
   } catch (err) {
     // deleteApiKey();
     console.error(err); // TEST
-    // alert(
-    //   `Error: ${err}\nPlease reload browser and enter valid full acces api key.`
-    // );
   }
 }
 
@@ -598,16 +598,3 @@ async function loadController() {
   initController();
   await loadController();
 })();
-
-// window.addEventListener('load', () => {
-//   console.log('WINDOW LOADED'); // TEST
-//   initController();
-//   loadController();
-// });
-
-// document.addEventListener('DOMContentLoaded', function () {
-//   //do work
-//   console.log('DOM Loaded'); // TEST
-//   initController();
-//   loadController();
-// });
