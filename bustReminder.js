@@ -531,6 +531,7 @@ function initController() {
 
   // check if apiKey is saved
   // if saved exit function
+  console.log('PDA API KEY', PDA_API_KEY); // TEST
   console.log('IS API KEY FALSE', !getApiKey()); // TEST
   if (isPDA() && !getApiKey()) {
     console.log('🤓 SETTING PDA API KEY'); // TEST
