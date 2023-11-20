@@ -27,6 +27,9 @@ let GLOBAL_BUST_STATE = {
   myDevice: undefined,
 };
 
+const PDA_API_KEY = '###PDA-APIKEY###';
+const isPDA = !/^(###).+(###)$/.test(PDA_API_KEY);
+
 ////  Colors
 const red = '#E54C19';
 const redLight = 'rgb(255, 168, 168)';
@@ -42,9 +45,6 @@ const white = 'rgb(51, 51, 51)';
 ////  SVG Gradients
 const greenSvgGradient = 'url(#sidebar_svg_gradient_regular_green_mobile';
 const orangeSvgGradient = 'url(#svg_status_idle';
-
-const PDA_API_KEY = '###PDA-APIKEY###';
-const isPDA = !/^(###).+(###)$/.test(PDA_API_KEY);
 
 ////////  UTILS FUNCTIONS
 
@@ -191,9 +191,11 @@ function deleteGlobalBustState() {
 }
 
 function getMyDeviceType() {
-  console.log('GET MY DEVICE'); // TEST
   width = window.innerWidth;
-  if (width === 0) getMyDeviceType();
+  console.log('GET MY DEVICE', width); // TEST
+  // if (!width) {
+  //   return getMyDeviceType();
+  // }
 
   return width > 1000 ? 'Desktop' : 'Mobile';
 }
@@ -203,10 +205,15 @@ function setApiKey(apiKey) {
   localStorage.setItem('bustrApiKey', JSON.stringify(apiKey));
 }
 function getApiKey() {
-  console.log('GET API KEY', JSON.parse(localStorage.getItem('bustrApiKey'))); // TEST
+  console.log('GET API KEY'); // TEST
+
+  if (isPDA) return PDA_API_KEY;
+
   if (!localStorage.getItem('bustrApiKey')) return;
+
   return JSON.parse(localStorage.getItem('bustrApiKey'));
 }
+
 function deleteApiKey() {
   localStorage.removeItem('bustrApiKey');
 }
@@ -315,14 +322,16 @@ const bustrStylesheetHTML = `<style>
       margin: 0 8px;
     }
 
-    #nav-jail .bustr-stats,
+    #nav-jail .bustr-stats span,
     #bustr-context .bustr-stats {
       color: var(--color, inherit);
+    }
+    #nav-jail .bustr-stats span {
+      margin-left: unset;
     }
 
     #bustr-context.contextMenu___bjhoL {
       display: none;
-      color: var(--color);
       left: unset;
       right: -74px;
     }
@@ -370,15 +379,15 @@ function renderBustrColorClass(availableBusts) {
   console.log('RENDER BUSTER COLOR'); // TEST
   console.log('userSettings', getUserSettings()); // TEST
 
-  const navJailParentEl = document.querySelector('#nav-jail').parentElement;
+  const navJailEl = document.querySelector('#nav-jail');
 
   if (+availableBusts <= getUserSettings().reminderLimits.redLimit) {
-    navJailParentEl.classList.add('bustr--red');
+    document.body.classList.add('bustr--red');
     return;
   }
 
   if (+availableBusts >= getUserSettings().reminderLimits.greenLimit) {
-    navJailParentEl.classList.add('available___ZS04X', 'bustr--green');
+    document.body.classList.add('available___ZS04X', 'bustr--green');
     return;
   }
 
@@ -386,7 +395,7 @@ function renderBustrColorClass(availableBusts) {
     availableBusts > getUserSettings().reminderLimits.redLimit &&
     availableBusts < reminderLimits.greenLimit
   ) {
-    navJailParentEl.classList.add('bustr--orange');
+    document.body.classList.add('bustr--orange');
   }
 }
 //// Init form view
@@ -441,7 +450,7 @@ function renderBustrDesktopView() {
   const jailLinkEl = document.querySelector('#nav-jail a');
   const statsHTML = `
       <span class="amount___p8QZX bustr-stats">
-        <span class="bustr-stats__penaltyScore">#</span>/<span class="bustr-stats__penaltyThreshold">#</span>:<span class="bustr-stats__availableBusts">#</span>
+        <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
       </span>`;
 
   jailLinkEl.insertAdjacentHTML('beforeend', statsHTML);
@@ -511,17 +520,18 @@ function inputValidatorCallback(event) {
 //// Init
 function initController() {
   console.log('INIT CONTROLLER'); // TEST
+
+  // render stylesheet
   renderBustrStylesheet();
 
+  // check if apiKey is saved
+  // if saved exit function
   if (getApiKey()) return;
 
-  if (isPDA) {
-    setApiKey(PDA_API_KEY);
-    return;
-  }
-  console.log('READYSTATE', document.readyState); // TEST
+  // if not saved render bustr form
   renderBustrForm();
 
+  // set event liseners
   //// Event listeners
   document
     .querySelector('#bustr-form__submit')
@@ -541,27 +551,40 @@ function initController() {
 //// Load
 async function loadController() {
   try {
+    // guard clause if no api key
     console.log('LOAD GUARD'); // TEST
     if (!getApiKey()) return;
-    console.log('LOAD CONTROLLER'); // TEST
 
-    getMyDeviceType() === 'Desktop'
-      ? renderBustrDesktopView()
-      : renderBustrMobileView();
+    // render view
+    if (!getMyDeviceType()) {
+      await new Promise((res, rej) => {
+        window.addEventListener('load', () => {
+          res();
+        });
+      });
+    }
+    if (getMyDeviceType() === 'Desktop') {
+      renderBustrDesktopView();
+    }
+    if (getMyDeviceType() === 'Mobile') {
+      renderBustrMobileView();
+    }
 
-    // fetch our data
+    // fetch data
     const data = await fetchBustsData(getApiKey());
 
+    // calc stats
     const timestampsArray = createTimestampsArray(data);
-
     const statsObj = calcBustrStats(timestampsArray);
-
     setPenaltyScore(statsObj.penaltyScore);
     setPenaltyThreshold(statsObj.penaltyThreshold);
     setAvailableBusts(statsObj.availableBusts);
-    renderBustrStats(statsObj);
 
+    // render color class
     renderBustrColorClass(getAvailableBusts());
+
+    // render stats
+    renderBustrStats(statsObj);
   } catch (err) {
     // deleteApiKey();
     console.error(err); // TEST
@@ -570,13 +593,17 @@ async function loadController() {
     // );
   }
 }
-window.addEventListener('load', () => {
-  console.log('WINDOW READY'); // TEST
-  console.log('READYSTATE', document.readyState); // TEST
+
+(async function () {
   initController();
-  console.log('READYSTATE', document.readyState); // TEST
-  loadController();
-});
+  await loadController();
+})();
+
+// window.addEventListener('load', () => {
+//   console.log('WINDOW LOADED'); // TEST
+//   initController();
+//   loadController();
+// });
 
 // document.addEventListener('DOMContentLoaded', function () {
 //   //do work
