@@ -29,7 +29,10 @@ let GLOBAL_BUST_STATE = {
 
 const PDA_API_KEY = '###PDA-APIKEY###';
 function isPDA() {
-  return !/^(###).+(###)$/.test(PDA_API_KEY);
+  const PDATestRegex = !/^(###).+(###)$/.test(PDA_API_KEY);
+  console.log('IS PDA', PDATestRegex)); // TEST
+
+  return PDATestRegex;
 }
 
 ////  Colors
@@ -528,7 +531,6 @@ function initController() {
 
   // check if apiKey is saved
   // if saved exit function
-  console.log('IS PDA', isPDA()); // TEST
   console.log('IS API KEY FALSE', !getApiKey()); // TEST
   if (isPDA() && !getApiKey()) {
     console.log('🤓 SETTING PDA API KEY'); // TEST
