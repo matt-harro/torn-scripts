@@ -30,7 +30,7 @@ let GLOBAL_BUST_STATE = {
 const PDA_API_KEY = '###PDA-APIKEY###';
 function isPDA() {
   const PDATestRegex = !/^(###).+(###)$/.test(PDA_API_KEY);
-  console.log('IS PDA', PDATestRegex)); // TEST
+  console.log('IS PDA', PDATestRegex); // TEST
 
   return PDATestRegex;
 }
