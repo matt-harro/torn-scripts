@@ -398,7 +398,7 @@ function renderBustrColorClass(availableBusts) {
 
   if (
     availableBusts > getUserSettings().reminderLimits.redLimit &&
-    availableBusts < reminderLimits.greenLimit
+    availableBusts < getUserSettings().reminderLimits.greenLimit
   ) {
     document.body.classList.add('bustr--orange');
   }
@@ -560,7 +560,7 @@ function initController() {
 }
 
 //// Load
-async function loadController() {
+async function updateController() {
   try {
     // guard clause if no api key
     console.log('LOAD GUARD'); // TEST
@@ -602,7 +602,14 @@ async function loadController() {
   }
 }
 
+function loadController() {
+  // check if local storage has global state
+  // load user settings from localStorage
+  // check latest timestamp
+  // if, latestest timestamp is <24 hours old
+}
+
 (async function () {
   initController();
-  await loadController();
+  await updateController();
 })();
