@@ -39,7 +39,9 @@ function isPDA() {
 const red = '#E54C19';
 const redLight = 'rgb(255, 168, 168)';
 
-const orange = '#B25900';
+// const orange = '#B25900';
+// const orange = '#d98c00';
+const orange = '#d08000';
 const orangeLight = '#FFBF00';
 
 const green = ''; // link color
@@ -276,13 +278,16 @@ const bustrStylesheetHTML = `<style>
     .bustr--red {
       --color: ${red}
     }
-    .dark-mode .bustr--green {
+    .dark-mode.bustr--green,
+    .bustr--green .swiper-slide {
       --color: ${greenLight}
     }
-    .dark-mode .bustr--orange {
+    .dark-mode.bustr--orange,
+    .bustr--orange .swiper-slide {
       --color: ${orangeLight}
     }
-    .dark-mode .bustr--red {
+    .dark-mode.bustr--red,
+    .bustr--red .swiper-slide {
       --color: ${redLight}
     }
     #bustr-form.header-wrapper-top {
@@ -327,7 +332,7 @@ const bustrStylesheetHTML = `<style>
       margin: 0 8px;
     }
 
-    #nav-jail .bustr-stats span,
+    #nav-jail .bustr-stats,
     #bustr-context .bustr-stats {
       color: var(--color, inherit);
     }
@@ -338,7 +343,8 @@ const bustrStylesheetHTML = `<style>
     #bustr-context.contextMenu___bjhoL {
       display: none;
       left: unset;
-      right: -74px;
+      right: -92px;
+      padding: 0 8px;
     }
     .contextMenuActive___e6i_B #bustr-context.contextMenu___bjhoL {
       display: flex;
