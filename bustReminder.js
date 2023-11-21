@@ -704,7 +704,8 @@ function autoUpdateController() {
 // necessary as PDA scripts are inject after window.onload
 
 const PDAPromise = new Promise((res, rej) => {
-  setTimeout(() => res(), 2000);
+  if (document.readyState === 'complete') res();
+  // setTimeout(() => res(), 2000);
 });
 
 const browserPromise = new Promise((res, rej) => {
@@ -712,6 +713,7 @@ const browserPromise = new Promise((res, rej) => {
 });
 
 (async function () {
+  console.log(document.readyState); // TEST
   await Promise.race([PDAPromise, browserPromise]);
   initController();
   await loadController();
