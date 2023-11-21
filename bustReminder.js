@@ -667,7 +667,6 @@ const jailObserverConfig = {
 async function successfulBustMutationCallback(mutationList, observer) {
   console.log('MUTATION OBSERVER'); // TEST
   for (const mutation of mutationList) {
-    console.log(mutation.target.innerText); // TEST
     if (
       mutation.target.innerText.match(/^(You busted ).+/) &&
       mutation.removedNodes.length > 0
@@ -691,8 +690,6 @@ function createJailMutationObserver() {
 }
 
 function autoUpdateController() {
-  // update score every 30 seconds
-
   // update after a successful bust
   console.log('AUTO UPDATE CONTROLLER'); // TEST
   const origin = window.location.origin;
@@ -703,10 +700,19 @@ function autoUpdateController() {
   }
 }
 
+//// Promise race conditions
+// necessary as PDA scripts are inject after window.onload
+
+const PDAPromise = new Promise((res, rej) => {
+  setTimeout(() => res(), 2000);
+});
+
+const browserPromise = new Promise((res, rej) => {
+  window.addEventListener('load', () => res());
+});
+
 (async function () {
-  await new Promise((res, rej) => {
-    window.addEventListener('load', () => res());
-  });
+  await Promise.race([PDAPromise, browserPromise]);
   initController();
   await loadController();
   autoUpdateController();
