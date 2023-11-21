@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.2.0
+// @version      0.2.1
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -26,6 +26,7 @@ let GLOBAL_BUSTR_STATE = {
   availableBusts: 0,
   timestampsArray: [],
   lastFetchTimestampMs: 0,
+  renderedView: undefined,
 };
 
 const PDA_API_KEY = '###PDA-APIKEY###';
@@ -276,8 +277,8 @@ function deleteGlobalBustrState() {
   localStorage.removeItem('bustrGlobalState');
 }
 
-function getMyDeviceType() {
-  width = window.innerWidth;
+function getMyViewportWidthType() {
+  width = visualViewport.width;
   console.log('GET MY DEVICE', width); // TEST
 
   return width > 1000 ? 'Desktop' : 'Mobile';
@@ -304,13 +305,24 @@ function deleteApiKey() {
 function setUserSettings(newUserSettings, currentState) {
   currentState = currentState || getGlobalBustrState();
 
-  const newState = { userSettings: newUserSettings, ...currentState };
+  const newState = { ...currentState, userSettings: newUserSettings };
   setGlobalBustrState(newState);
 }
 function getUserSettings() {
   console.log('GET USER SETTINGS'); // TEST
   return getGlobalBustrState().userSettings;
 }
+
+function setRenderedView(newRenderedView, currentState) {
+  currentState = currentState || getGlobalBustrState();
+
+  const newState = { ...currentState, renderedView: newRenderedView };
+  setGlobalBustrState(newState);
+}
+function getRenderedView(newRenderedView, currentState) {
+  return getGlobalBustrState().renderedView;
+}
+
 function setTimestampsArray(newTimestampsArr, currentState) {
   currentState = currentState || getGlobalBustrState();
 
@@ -629,20 +641,13 @@ function initController() {
       setApiKey(PDA_API_KEY);
     }
 
-    // render view
-    // if (!getMyDeviceType()) {
-    //   await new Promise((res, rej) => {
-    //     window.addEventListener('load', () => {
-    //       res();
-    //     });
-    //   });
-    // }
-
-    if (getMyDeviceType() === 'Desktop') {
+    if (getMyViewportWidthType() === 'Desktop') {
       renderBustrDesktopView();
+      setRenderedView('Desktop');
     }
-    if (getMyDeviceType() === 'Mobile') {
+    if (getMyViewportWidthType() === 'Mobile') {
       renderBustrMobileView();
+      setRenderedView('Mobile');
     }
 
     if (getApiKey()) return;
@@ -725,6 +730,19 @@ function refreshStatsController() {
   }, 30000);
 }
 
+function viewportResizeController() {
+  visualViewport.addEventListener('resize', async (e) => {
+    console.log(e.target); // TEST
+    if (!getRenderedView()) return;
+
+    const viewportWidthType = getMyViewportWidthType();
+    if (viewportWidthType !== getRenderedView()) {
+      initController();
+      await loadController();
+    }
+  });
+}
+
 //// Promise race conditions
 // necessary as PDA scripts are inject after window.onload
 
@@ -744,4 +762,5 @@ const browserPromise = new Promise((res, rej) => {
   await loadController();
   successfulBustUpdateController();
   refreshStatsController();
+  viewportResizeController();
 })();
