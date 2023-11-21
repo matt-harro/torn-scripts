@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.1
+// @version      0.2.0
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -25,6 +25,7 @@ let GLOBAL_BUSTR_STATE = {
   penaltyThreshold: 0,
   availableBusts: 0,
   timestampsArray: [],
+  lastFetchTimestampMs: 0,
 };
 
 const PDA_API_KEY = '###PDA-APIKEY###';
@@ -53,7 +54,7 @@ const white = 'rgb(51, 51, 51)';
 const greenSvgGradient = 'url(#sidebar_svg_gradient_regular_green_mobile';
 const orangeSvgGradient = 'url(#svg_status_idle';
 
-////////  UTILS FUNCTIONS
+////  Utils Functions
 
 function createTimestampsArray(data) {
   console.log('CREATE TIMESTAMPS'); // TEST
@@ -145,6 +146,7 @@ async function fetchBustsData(apiKey) {
 
     const response = await fetch(url);
     const data = await response.json();
+    setLastFecthTimestampMs();
 
     console.log('res', response); // TEST
     console.log('data', data); // TEST
@@ -171,6 +173,68 @@ function calcBustrStats(timestampsArray) {
   const availableBusts = calcAvailableBusts(penaltyScore, penaltyThreshold);
 
   return { penaltyScore, penaltyThreshold, availableBusts };
+}
+
+//// Callback functions
+function submitFormCallback() {
+  const inputEl = document.querySelector('#bustr-form__input');
+  const submitBtnEl = document.querySelector('#bustr-form__submit');
+
+  const apiKey = inputEl.value;
+  if (apiKey.length !== 16) {
+    inputEl.style.border = `2px solid ${red}`;
+    submitBtnEl.disabled = true;
+    return;
+  }
+  setApiKey(apiKey);
+  dismountBustrForm();
+  window.location.reload();
+}
+
+function inputValidatorCallback(event) {
+  const inputEl = document.querySelector('#bustr-form__input');
+  const submitBtnEl = document.querySelector('#bustr-form__submit');
+  console.log('value', inputEl.value); // TEST
+  console.log('length', inputEl.value.length); // TEST
+  if (event.target.value.length === 16) {
+    submitBtnEl.disabled = false;
+    inputEl.style.border = '1px solid #444';
+  }
+  if (event.target.value.length !== 16) {
+    submitBtnEl.disabled = true;
+  }
+}
+
+async function successfulBustMutationCallback(mutationList, observer) {
+  console.log('MUTATION OBSERVER'); // TEST
+  for (const mutation of mutationList) {
+    if (
+      mutation.target.innerText.match(/^(You busted ).+/) &&
+      mutation.removedNodes.length > 0
+    ) {
+      observer.disconnect();
+      console.log('successful bust! Timestamp: ', Date.now()); // TEST
+      addOneTimestampsArray(Math.floor(Date.now() / 1000));
+      await loadController();
+      successfulBustUpdateController();
+    }
+  }
+}
+
+//// Mutation Observers
+const jailObserverConfig = {
+  attributes: false,
+  childList: true,
+  subtree: true,
+};
+
+function createJailMutationObserver() {
+  console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
+  const jailObserver = new MutationObserver(successfulBustMutationCallback);
+  jailObserver.observe(
+    document.querySelector('ul.users-list'),
+    jailObserverConfig
+  );
 }
 
 ////////  MODEL ////////
@@ -270,6 +334,19 @@ function addOneTimestampsArray(timestamp, currentState) {
 }
 function getTimestampsArray() {
   return getGlobalBustrState().timestampsArray;
+}
+
+function setLastFecthTimestampMs(currentState) {
+  currentState = currentState || getGlobalBustrState();
+
+  const currentTimestampMs = Date.now();
+  setGlobalBustrState({
+    ...currentState,
+    lastFetchTimestampMs: currentTimestampMs,
+  });
+}
+function getLastFecthTimestampMs() {
+  return getGlobalBustrState().lastFetchTimestampMs;
 }
 
 function setPenaltyThreshold(newPenaltyThreshold, currentState) {
@@ -535,38 +612,7 @@ function dismountBustrForm() {
   document.querySelector('#bustr-form').remove();
 }
 
-////////  CONTROLLER  ////////
-//// Callback functions
-function submitFormCallback() {
-  const inputEl = document.querySelector('#bustr-form__input');
-  const submitBtnEl = document.querySelector('#bustr-form__submit');
-
-  const apiKey = inputEl.value;
-  if (apiKey.length !== 16) {
-    inputEl.style.border = `2px solid ${red}`;
-    submitBtnEl.disabled = true;
-    return;
-  }
-  setApiKey(apiKey);
-  dismountBustrForm();
-  window.location.reload();
-}
-
-function inputValidatorCallback(event) {
-  const inputEl = document.querySelector('#bustr-form__input');
-  const submitBtnEl = document.querySelector('#bustr-form__submit');
-  console.log('value', inputEl.value); // TEST
-  console.log('length', inputEl.value.length); // TEST
-  if (event.target.value.length === 16) {
-    submitBtnEl.disabled = false;
-    inputEl.style.border = '1px solid #444';
-  }
-  if (event.target.value.length !== 16) {
-    submitBtnEl.disabled = true;
-  }
-}
-
-//// Init
+////////  CONTROLLERS  ////////
 function initController() {
   try {
     console.log('INIT CONTROLLER'); // TEST
@@ -636,7 +682,11 @@ async function loadController() {
     }
 
     // fetch data
-    if (getTimestampsArray().length === 0) {
+    if (
+      getTimestampsArray().length === 0 ||
+      Date.now() - getLastFecthTimestampMs() > 1000 * 60 * 10 ||
+      !getLastFecthTimestampMs()
+    ) {
       console.log('fetching data'); // TEST
       const data = await fetchBustsData(getApiKey());
       setTimestampsArray(createTimestampsArray(data));
@@ -658,38 +708,7 @@ async function loadController() {
   }
 }
 
-const jailObserverConfig = {
-  attributes: false,
-  childList: true,
-  subtree: true,
-};
-
-async function successfulBustMutationCallback(mutationList, observer) {
-  console.log('MUTATION OBSERVER'); // TEST
-  for (const mutation of mutationList) {
-    if (
-      mutation.target.innerText.match(/^(You busted ).+/) &&
-      mutation.removedNodes.length > 0
-    ) {
-      observer.disconnect();
-      console.log('successful bust! Timestamp: ', Date.now()); // TEST
-      addOneTimestampsArray(Math.floor(Date.now() / 1000));
-      await loadController();
-      autoUpdateController();
-    }
-  }
-}
-
-function createJailMutationObserver() {
-  console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
-  const jailObserver = new MutationObserver(successfulBustMutationCallback);
-  jailObserver.observe(
-    document.querySelector('ul.users-list'),
-    jailObserverConfig
-  );
-}
-
-function autoUpdateController() {
+function successfulBustUpdateController() {
   // update after a successful bust
   console.log('AUTO UPDATE CONTROLLER'); // TEST
   const origin = window.location.origin;
@@ -698,6 +717,12 @@ function autoUpdateController() {
   if (origin + pathname === 'https://www.torn.com/jailview.php') {
     createJailMutationObserver();
   }
+}
+
+function refreshStatsController() {
+  setInterval(async () => {
+    await loadController();
+  }, 30000);
 }
 
 //// Promise race conditions
@@ -717,5 +742,6 @@ const browserPromise = new Promise((res, rej) => {
   await Promise.race([PDAPromise, browserPromise]);
   initController();
   await loadController();
-  autoUpdateController();
+  successfulBustUpdateController();
+  refreshStatsController();
 })();
