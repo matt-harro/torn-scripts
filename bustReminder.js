@@ -14,7 +14,7 @@ console.log('😎 START!!!!'); // TEST
 
 ////////  GLOBAL VARIABLES
 ////  State
-let GLOBAL_BUST_STATE = {
+let GLOBAL_BUSTR_STATE = {
   userSettings: {
     reminderLimits: {
       redLimit: 0,
@@ -24,7 +24,7 @@ let GLOBAL_BUST_STATE = {
   penaltyScore: 0,
   penaltyThreshold: 0,
   availableBusts: 0,
-  myDevice: undefined,
+  timestampsArray: [],
 };
 
 const PDA_API_KEY = '###PDA-APIKEY###';
@@ -175,14 +175,29 @@ function calcBustrStats(timestampsArray) {
 
 ////////  MODEL ////////
 ////  Getters and Setters
-function setGlobalBustState(newState) {
-  GLOBAL_BUST_STATE = { ...GLOBAL_BUST_STATE, ...newState };
+function setGlobalBustrState(newState) {
+  GLOBAL_BUSTR_STATE = { ...GLOBAL_BUSTR_STATE, ...newState };
+  localStorage.setItem('globalBustrState', JSON.stringify(GLOBAL_BUSTR_STATE));
+  saveGlobalBustrState();
+  console.log('STATE!!! ', GLOBAL_BUSTR_STATE); // TEST
 }
-function getGlobalBustState() {
-  return GLOBAL_BUST_STATE;
+function getGlobalBustrState() {
+  return GLOBAL_BUSTR_STATE;
 }
-function deleteGlobalBustState() {
-  GLOBAL_BUST_STATE = {
+function loadGlobalBustrState() {
+  if (!localStorage.getItem('globalBustrState')) return;
+  const loadedState = JSON.parse(localStorage.getItem('globalBustrState'));
+  GLOBAL_BUSTR_STATE = { ...GLOBAL_BUSTR_STATE, ...loadedState };
+  return localStorage.getItem('globalBustrState');
+}
+function saveGlobalBustrState() {
+  localStorage.setItem(
+    'globalBustrState',
+    JSON.stringify(getGlobalBustrState())
+  );
+}
+function deleteGlobalBustrState() {
+  GLOBAL_BUSTR_STATE = {
     userSettings: {
       reminderLimits: {
         redLimit: 0,
@@ -192,17 +207,14 @@ function deleteGlobalBustState() {
     penaltyScore: 0,
     penaltyThreshold: 0,
     availableBusts: 0,
-    myDevice: undefined,
+    timestampsArray: [],
   };
-  localStorage.removeItem('bustrApiKey');
+  localStorage.removeItem('bustrGlobalState');
 }
 
 function getMyDeviceType() {
   width = window.innerWidth;
   console.log('GET MY DEVICE', width); // TEST
-  // if (!width) {
-  //   return getMyDeviceType();
-  // }
 
   return width > 1000 ? 'Desktop' : 'Mobile';
 }
@@ -226,44 +238,68 @@ function deleteApiKey() {
 }
 
 function setUserSettings(newUserSettings, currentState) {
-  currentState = currentState || getGlobalBustState();
+  currentState = currentState || getGlobalBustrState();
 
   const newState = { userSettings: newUserSettings, ...currentState };
-  setGlobalBustState(newState);
+  setGlobalBustrState(newState);
 }
 function getUserSettings() {
   console.log('GET USER SETTINGS'); // TEST
-  return getGlobalBustState().userSettings;
+  return getGlobalBustrState().userSettings;
+}
+function setTimestampsArray(newTimestampsArr, currentState) {
+  currentState = currentState || getGlobalBustrState();
+
+  return setGlobalBustrState({
+    ...currentState,
+    timestampsArray: newTimestampsArr,
+  });
+}
+function addOneTimestampsArray(timestamp, currentState) {
+  currentState = currentState || getGlobalBustrState();
+
+  const newTimestampsArr = [timestamp, ...currentState.timestampsArray];
+  console.log(
+    'old TSA: ',
+    currentState.timestampsArray.length,
+    'new TSA: ',
+    newTimestampsArr.length,
+    newTimestampsArr
+  ); // TEST
+  setTimestampsArray(newTimestampsArr);
+}
+function getTimestampsArray() {
+  return getGlobalBustrState().timestampsArray;
 }
 
 function setPenaltyThreshold(newPenaltyThreshold, currentState) {
-  currentState = currentState || getGlobalBustState();
+  currentState = currentState || getGlobalBustrState();
 
   const newState = { ...currentState, penaltyThreshold: newPenaltyThreshold };
-  setGlobalBustState(newState);
+  setGlobalBustrState(newState);
 }
 function getPenaltyThreshold() {
-  return getGlobalBustState().penaltyThreshold;
+  return getGlobalBustrState().penaltyThreshold;
 }
 
 function setPenaltyScore(newPenaltyScore, currentState) {
-  currentState = currentState || getGlobalBustState();
+  currentState = currentState || getGlobalBustrState();
 
   const newState = { ...currentState, penaltyScore: newPenaltyScore };
-  setGlobalBustState(newState);
+  setGlobalBustrState(newState);
 }
 function getPenaltyScore() {
-  return getGlobalBustState().penaltyScore;
+  return getGlobalBustrState().penaltyScore;
 }
 
 function setAvailableBusts(newAvailableBusts, currentState) {
-  currentState = currentState || getGlobalBustState();
+  currentState = currentState || getGlobalBustrState();
 
   const newState = { ...currentState, availableBusts: newAvailableBusts };
-  setGlobalBustState(newState);
+  setGlobalBustrState(newState);
 }
 function getAvailableBusts() {
-  return getGlobalBustState().availableBusts;
+  return getGlobalBustrState().availableBusts;
 }
 
 ////////  VIEW  ////////
@@ -469,12 +505,14 @@ function renderBustrDesktopView() {
 
 //// Mobile view
 function renderMobileBustrNotification() {
+  console.log('READYSTATE', document.readyState); // TEST
   const navJailLinkEl = document.querySelector('#nav-jail a');
   console.log('NAVJAILLINKEL', navJailLinkEl); // TEST
   const notificationHTML = `
-        <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
+  <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
 
   navJailLinkEl.insertAdjacentHTML('beforebegin', notificationHTML);
+  console.log('READYSTATE', document.readyState); // TEST
 }
 
 function renderBustrMobileView() {
@@ -530,56 +568,30 @@ function inputValidatorCallback(event) {
 
 //// Init
 function initController() {
-  console.log('INIT CONTROLLER'); // TEST
-
-  // render stylesheet
-  renderBustrStylesheet();
-
-  // check if apiKey is saved
-  // if saved exit function
-  console.log('PDA API KEY', PDA_API_KEY); // TEST
-  console.log('IS API KEY FALSE', !getApiKey()); // TEST
-  if (isPDA() && !getApiKey()) {
-    console.log('🤓 SETTING PDA API KEY'); // TEST
-    setApiKey(PDA_API_KEY);
-  }
-  if (getApiKey()) return;
-
-  // if not saved render bustr form
-  renderBustrForm();
-
-  // set event liseners
-  //// Event listeners
-  document
-    .querySelector('#bustr-form__submit')
-    .addEventListener('click', submitFormCallback);
-  document
-    .querySelector('#bustr-form__input')
-    .addEventListener('input', inputValidatorCallback);
-  document
-    .querySelector('#bustr-form__input')
-    .addEventListener('keyup', (event) => {
-      if (event.key === 'Enter' || event.keyCode === 13) {
-        submitFormCallback();
-      }
-    });
-}
-
-//// Load
-async function updateController() {
   try {
-    // guard clause if no api key
-    console.log('LOAD GUARD'); // TEST
-    if (!getApiKey()) return;
+    console.log('INIT CONTROLLER'); // TEST
+
+    // render stylesheet
+    renderBustrStylesheet();
+
+    // check if apiKey is saved
+    // if saved exit function
+    console.log('PDA API KEY', PDA_API_KEY); // TEST
+    console.log('IS API KEY FALSE', !getApiKey()); // TEST
+    if (isPDA() && !getApiKey()) {
+      console.log('🤓 SETTING PDA API KEY'); // TEST
+      setApiKey(PDA_API_KEY);
+    }
 
     // render view
-    if (!getMyDeviceType()) {
-      await new Promise((res, rej) => {
-        window.addEventListener('load', () => {
-          res();
-        });
-      });
-    }
+    // if (!getMyDeviceType()) {
+    //   await new Promise((res, rej) => {
+    //     window.addEventListener('load', () => {
+    //       res();
+    //     });
+    //   });
+    // }
+
     if (getMyDeviceType() === 'Desktop') {
       renderBustrDesktopView();
     }
@@ -587,12 +599,50 @@ async function updateController() {
       renderBustrMobileView();
     }
 
-    // fetch data
-    const data = await fetchBustsData(getApiKey());
+    if (getApiKey()) return;
 
-    // calc stats
-    const timestampsArray = createTimestampsArray(data);
-    const statsObj = calcBustrStats(timestampsArray);
+    // if not saved render bustr form
+    renderBustrForm();
+
+    // set event liseners
+    //// Event listeners
+    document
+      .querySelector('#bustr-form__submit')
+      .addEventListener('click', submitFormCallback);
+    document
+      .querySelector('#bustr-form__input')
+      .addEventListener('input', inputValidatorCallback);
+    document
+      .querySelector('#bustr-form__input')
+      .addEventListener('keyup', (event) => {
+        if (event.key === 'Enter' || event.keyCode === 13) {
+          submitFormCallback();
+        }
+      });
+  } catch (err) {
+    console.error(err); // TEST
+  }
+}
+
+//// load
+async function loadController() {
+  try {
+    // guard clause if no api key
+    console.log('LOAD GUARD'); // TEST
+    if (!getApiKey()) return;
+
+    if (loadGlobalBustrState()) {
+      loadGlobalBustrState();
+    }
+
+    // fetch data
+    if (getTimestampsArray().length === 0) {
+      console.log('fetching data'); // TEST
+      const data = await fetchBustsData(getApiKey());
+      setTimestampsArray(createTimestampsArray(data));
+    }
+
+    const statsObj = calcBustrStats(getTimestampsArray());
     setPenaltyScore(statsObj.penaltyScore);
     setPenaltyThreshold(statsObj.penaltyThreshold);
     setAvailableBusts(statsObj.availableBusts);
@@ -608,14 +658,56 @@ async function updateController() {
   }
 }
 
-function loadController() {
-  // check if local storage has global state
-  // load user settings from localStorage
-  // check latest timestamp
-  // if, latestest timestamp is <24 hours old
+const jailObserverConfig = {
+  attributes: false,
+  childList: true,
+  subtree: true,
+};
+
+async function successfulBustMutationCallback(mutationList, observer) {
+  console.log('MUTATION OBSERVER'); // TEST
+  for (const mutation of mutationList) {
+    console.log(mutation.target.innerText); // TEST
+    if (
+      mutation.target.innerText.match(/^(You busted ).+/) &&
+      mutation.removedNodes.length > 0
+    ) {
+      observer.disconnect();
+      console.log('successful bust! Timestamp: ', Date.now()); // TEST
+      addOneTimestampsArray(Math.floor(Date.now() / 1000));
+      await loadController();
+      autoUpdateController();
+    }
+  }
+}
+
+function createJailMutationObserver() {
+  console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
+  const jailObserver = new MutationObserver(successfulBustMutationCallback);
+  jailObserver.observe(
+    document.querySelector('ul.users-list'),
+    jailObserverConfig
+  );
+}
+
+function autoUpdateController() {
+  // update score every 30 seconds
+
+  // update after a successful bust
+  console.log('AUTO UPDATE CONTROLLER'); // TEST
+  const origin = window.location.origin;
+  const pathname = window.location.pathname;
+
+  if (origin + pathname === 'https://www.torn.com/jailview.php') {
+    createJailMutationObserver();
+  }
 }
 
 (async function () {
+  await new Promise((res, rej) => {
+    window.addEventListener('load', () => res());
+  });
   initController();
-  await updateController();
+  await loadController();
+  autoUpdateController();
 })();
