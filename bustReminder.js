@@ -20,6 +20,11 @@ let GLOBAL_BUSTR_STATE = {
       redLimit: 0,
       greenLimit: 3,
     },
+    statsRefreshRate: 30,
+    refetchRate: 10,
+    customPenaltyThreshold: 0,
+    quickBust: true,
+    quickBail: false,
   },
   penaltyScore: 0,
   penaltyThreshold: 0,
@@ -206,36 +211,78 @@ function inputValidatorCallback(event) {
   }
 }
 
-async function successfulBustMutationCallback(mutationList, observer) {
-  console.log('MUTATION OBSERVER'); // TEST
-  for (const mutation of mutationList) {
-    if (
-      mutation.target.innerText.match(/^(You busted ).+/) &&
-      mutation.removedNodes.length > 0
-    ) {
-      observer.disconnect();
-      console.log('successful bust! Timestamp: ', Date.now()); // TEST
-      addOneTimestampsArray(Math.floor(Date.now() / 1000));
-      await loadController();
-      successfulBustUpdateController();
+async function successfulBustFromMiniProfileMutationCallback(
+  mutationList,
+  observer
+) {
+  try {
+    console.log('MUTATION OBSERVER'); // TEST
+    for (const mutation of mutationList) {
+      if (!mutation.target.innerText) return;
+      if (
+        mutation.target.innerText.match(/^(You busted ).+/) &&
+        mutation.addedNodes.length == 4
+      ) {
+        console.log('4️⃣ addedNodes'); // TEST
+      }
+      if (mutation.target.innerText.match(/^(You busted ).+/)) {
+        console.log('💪', mutation); // TEST
+        observer.disconnect();
+        console.log('successful bust! Timestamp: ', Date.now()); // TEST
+        addOneTimestampsArray(Math.floor(Date.now() / 1000));
+        await loadController();
+        successfulBustUpdateController();
+      }
     }
+  } catch (err) {
+    console.error(err); // TEST
   }
 }
-
-//// Mutation Observers
-const jailObserverConfig = {
-  attributes: false,
-  childList: true,
-  subtree: true,
-};
+async function successfulBustFromJailPageMutationCallback(
+  mutationList,
+  observer
+) {
+  try {
+    console.log('MUTATION OBSERVER'); // TEST
+    for (const mutation of mutationList) {
+      if (
+        mutation.target.innerText.match(/^(You busted ).+/) &&
+        mutation.removedNodes.length > 0
+      ) {
+        console.log('💪🏾', mutation); // TEST
+        observer.disconnect();
+        console.log('successful bust! Timestamp: ', Date.now()); // TEST
+        addOneTimestampsArray(Math.floor(Date.now() / 1000));
+        await loadController();
+        successfulBustUpdateController();
+      }
+    }
+  } catch (err) {
+    console.error(err); // TEST
+  }
+}
+function createMiniProfileMutationObserver() {
+  console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
+  const miniProfileObserver = new MutationObserver(
+    successfulBustFromMiniProfileMutationCallback
+  );
+  miniProfileObserver.observe(document, {
+    attributes: false,
+    childList: true,
+    subtree: true,
+  });
+}
 
 function createJailMutationObserver() {
   console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
-  const jailObserver = new MutationObserver(successfulBustMutationCallback);
-  jailObserver.observe(
-    document.querySelector('ul.users-list'),
-    jailObserverConfig
+  const jailObserver = new MutationObserver(
+    successfulBustFromJailPageMutationCallback
   );
+  jailObserver.observe(document.querySelector('ul.users-list'), {
+    attributes: false,
+    childList: true,
+    subtree: true,
+  });
 }
 
 ////////  MODEL ////////
@@ -278,10 +325,12 @@ function deleteGlobalBustrState() {
 }
 
 function getMyViewportWidthType() {
-  width = visualViewport.width;
+  let width = visualViewport.width;
   console.log('GET MY DEVICE', width); // TEST
 
-  return width > 1000 ? 'Desktop' : 'Mobile';
+  if (width > 1000) return 'Desktop';
+  if (width < 1000 || width) return 'Mobile';
+  throw new Error('Visual viewport not loaded');
 }
 
 function setApiKey(apiKey) {
@@ -415,6 +464,10 @@ const bustrStylesheetHTML = `<style>
     .bustr--red .swiper-slide {
       --color: ${redLight}
     }
+    .bg-gradient--green{
+      --gradient-green: linear-gradient(to bottom, rgba(143, 113, 113, 1) 0, rgba(92, 62, 62, 1) 100%);
+    }
+
     #bustr-form.header-wrapper-top {
       display: flex;
     }
@@ -489,6 +542,21 @@ const bustrStylesheetHTML = `<style>
       top: -6px;
     }
 
+    #prefs-tab-menu #bustr-settings {
+      display: none;
+    }
+    #prefs-tab-menu #bustr-settings.active {
+      display: block;
+    }
+    #bustr-settings input[type="number"] {
+      height: 24px;
+      width: 48px;
+      padding: 1px 5px;
+      text-align: center;
+    }
+
+
+
     @media screen and (max-width:1000px) {
       #bustr-form.header-wrapper-top h2 {
         width: 148px;
@@ -554,6 +622,211 @@ function renderBustrForm() {
   topHeaderBannerEl.insertAdjacentHTML('afterbegin', bustrFormHTML);
 }
 
+function dismountBustrForm() {
+  document.querySelector('#bustr-form').remove();
+}
+
+function renderBustrSettingsTabs() {
+  console.log('RENDER SETTINGS TABS'); // TEST
+  const sideMenuTabsElArr = [
+    ...document.querySelectorAll('#prefs-tab-menu .headers li'),
+  ];
+  const dropdownCategoriesBtn = document.querySelector('#categories-button');
+  const dropdownMenuListEl = document.querySelector(
+    'ul.ui-selectmenu-menu-dropdown'
+  );
+
+  const bustrSettingsSideTabHTML = `
+    <li class="delimiter"></li>
+    <li id="bustr-settings-sidetab" class="c-pointer ui-state-default ui-corner-top ui-tabs-active" data-title-name="Change your general settings" role="tab" tabindex="0" aria-controls="settings" aria-labelledby="ui-id-2" aria-selected="true">
+      <a class="t-gray-6 bold h settings ui-tabs-anchor" href="#settings" role="presentation" tabindex="-1" id="bustr-settings-sidetab__link" i-data="i_192_87_149_34">Bustr settings</a>
+    </li>
+    `;
+
+  const bustrSettingsDropdownTabHTML = `
+  <li role="presentation" id='#bustr-settings-dropdown'>
+    <a href="#nogo" tabindex="-1" role="option" aria-selected="false" id="bustr-dropdown__select">Bustr settings</a>
+  </li>`;
+
+  sideMenuTabsElArr[6].insertAdjacentHTML('afterend', bustrSettingsSideTabHTML);
+
+  dropdownMenuListEl.insertAdjacentHTML(
+    'afterbegin',
+    bustrSettingsDropdownTabHTML
+  );
+  dropdownCategoriesBtn.addEventListener('click', () => {
+    console.log('👶🏻', dropdownMenuListEl.children); // TEST
+    const busterDropdownIsChild = [...dropdownMenuListEl.children].filter(
+      (child) => child.id === 'bustr-settings-dropdown'
+    );
+    if (!busterDropdownIsChild) {
+      dropdownMenuListEl.insertAdjacentHTML(
+        'afterbegin',
+        bustrSettingsDropdownTabHTML
+      );
+    }
+  });
+}
+
+function renderBustrSettingsForm() {
+  const prefsTabTitleEl = document.querySelector('.prefs-tab-title');
+  prefsTabTitleEl.textContent = 'Change your bust reminder settings';
+
+  const sideMenuTabsListEl = document.querySelector('#prefs-tab-menu .headers');
+  // show tabs class : ui-tabs-active
+  // active tab class : ui-state-active
+
+  bustrSettingsFormHTML = `
+  <div
+      id="bustr-settings"
+      class="prefs-cont left ui-tabs-panel ui-widget-content ui-corner-bottom"
+      aria-labelledby="ui-id-3"
+      role="tabpanel"
+      aria-expanded="true"
+      aria-hidden="false"
+    >
+    <div class="inner-block b-border-c t-border-f">
+      <ul class="prefs-list small-select-menu-wrap">
+        <li>
+          <p class="m-bottom5">Custom Penalty Threshold: </p>
+          <input
+            type="number"
+            name="customThreshold"
+            id="bustr-custom-threshold"
+            size="5"
+            value="0"
+            min="0"
+          />
+        </li>
+      </ul>
+    </div>
+    <div class="inner-block b-border-c t-border-f">
+      <ul class="prefs-list small-select-menu-wrap">
+        <li>
+          <p class="m-bottom5">Custom Penalty Threshold: </p>
+          <input
+            type="number"
+            name="customThreshold"
+            id="bustr-custom-threshold"
+            size="5"
+            value="0"
+            min="0"
+          />
+        </li>
+      </ul>
+    </div>
+    <div class="inner-block b-border-c t-border-f">
+      <ul class="prefs-list attack-pref-block small-select-menu-wrap">
+        <li role="radiogroup">
+          <div class="title left">Quick Bust</div>
+          <div class="choice-container left-position">
+            <input
+              id="quick-bust-on"
+              class="radio-css"
+              type="radio"
+              name="quick-bust"
+              value="true"
+              checked="checked"
+            />
+            <label for="quick-bust-on" class="marker-css"
+              >On</label
+            >
+          </div>
+          <div class="choice-container right-position">
+            <input
+              id="quick-bust-off"
+              class="radio-css"
+              type="radio"
+              name="quick-bust"
+              value="false"
+            />
+            <label for="quick-bust-off" class="marker-css">Off</label>
+          </div>
+          <div class="clear"></div>
+        </li>
+        <li role="radiogroup">
+          <div class="title left">Quick Bail</div>
+          <div class="choice-container left-position">
+            <input
+              id="quick-bail-on"
+              class="radio-css"
+              type="radio"
+              name="quick-bail"
+              value="true"
+              checked="checked"
+            />
+            <label for="quick-bail-on" class="marker-css"
+              >On</label
+            >
+          </div>
+          <div class="choice-container right-position">
+            <input
+              id="quick-bail-off"
+              class="radio-css"
+              type="radio"
+              name="quick-bail"
+              value="false"
+            />
+            <label for="quick-bail-off" class="marker-css">Off</label>
+          </div>
+          <div class="clear"></div>
+        </li>
+      </ul>
+    </div>
+      <div class="inner-block b-border-c t-border-f">
+        <ul class="prefs-list small-select-menu-wrap">
+          <li>
+            <p class="m-bottom5">Red Limit: </p>
+            <input
+              type="number"
+              name="redLimit"
+              id="bustr-red-input"
+              size="5"
+              value="0"
+              min="0"
+            />
+          </li>
+          <li>
+            <p class="m-top10 m-bottom5">Green Limit: </p>
+            <input
+              id="bustr-green-input"
+              type="number"
+              name="Red Limit"
+              value="3"
+              size="5"
+            />
+          </li>
+        </ul>
+      </div>
+      <div class="inner-block b-border-c t-border-f">
+        <ul class="prefs-list small-select-menu-wrap">
+          <li>
+            <p class="m-top10 m-bottom5">Stats Refresh Rate (seconds): </p>
+            <input type="number" name="city" id="bustr-refresh-input" size="5" value="30" />
+          </li>
+          <li>
+            <p class="m-top10 m-bottom5">API Refresh Rate (minutes): </p>
+            <input type="number" name="API Refetch Rate" id="bustr-refetch-input" value="10" />
+          </li>
+        </ul>
+      </div>
+      <div class="inner-block t-border-f">
+        <div class="btn-wrap silver">
+          <div class="btn">
+            <input
+              class="torn-btn update"
+              type="submit"
+              value="SAVE"
+              id="bustr-save-btn"
+            />
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  sideMenuTabsListEl.insertAdjacentHTML('afterend', bustrSettingsFormHTML);
+}
+
 // function renderJailIcon() {
 //   console.log('REPLACE JAIL ICON'); // TEST
 //   const fill = 'url(#sidebar_svg_gradient_regular_green_mobile';
@@ -594,14 +867,13 @@ function renderBustrDesktopView() {
 
 //// Mobile view
 function renderMobileBustrNotification() {
-  console.log('READYSTATE', document.readyState); // TEST
+  console.log('RENDER MOBILE NOTIFICATION'); // TEST
   const navJailLinkEl = document.querySelector('#nav-jail a');
   console.log('NAVJAILLINKEL', navJailLinkEl); // TEST
   const notificationHTML = `
   <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
 
   navJailLinkEl.insertAdjacentHTML('beforebegin', notificationHTML);
-  console.log('READYSTATE', document.readyState); // TEST
 }
 
 function renderBustrMobileView() {
@@ -620,14 +892,10 @@ function renderBustrMobileView() {
   navJailEl.insertAdjacentHTML('afterend', bustrContextMenuHTML);
 }
 
-function dismountBustrForm() {
-  document.querySelector('#bustr-form').remove();
-}
-
 ////////  CONTROLLERS  ////////
-function initController() {
+async function initController() {
   try {
-    console.log('INIT CONTROLLER'); // TEST
+    console.log('🙌 INIT CONTROLLER'); // TEST
 
     // render stylesheet
     renderBustrStylesheet();
@@ -639,6 +907,12 @@ function initController() {
     if (isPDA() && !getApiKey()) {
       console.log('🤓 SETTING PDA API KEY'); // TEST
       setApiKey(PDA_API_KEY);
+    }
+
+    if (!visualViewport.width) {
+      await new Promise((res) => {
+        document.addEventListener('load', () => res());
+      });
     }
 
     if (getMyViewportWidthType() === 'Desktop') {
@@ -719,6 +993,8 @@ function successfulBustUpdateController() {
   const origin = window.location.origin;
   const pathname = window.location.pathname;
 
+  createMiniProfileMutationObserver();
+
   if (origin + pathname === 'https://www.torn.com/jailview.php') {
     createJailMutationObserver();
   }
@@ -732,7 +1008,6 @@ function refreshStatsController() {
 
 function viewportResizeController() {
   visualViewport.addEventListener('resize', async (e) => {
-    console.log(e.target); // TEST
     if (!getRenderedView()) return;
 
     const viewportWidthType = getMyViewportWidthType();
@@ -743,24 +1018,43 @@ function viewportResizeController() {
   });
 }
 
+function userSettingsController() {
+  if (window.location.pathname !== '/preferences.php') return;
+  renderBustrSettingsTabs();
+  renderBustrSettingsForm();
+}
+
 //// Promise race conditions
 // necessary as PDA scripts are inject after window.onload
 
 const PDAPromise = new Promise((res, rej) => {
   if (document.readyState === 'complete') res();
-  // setTimeout(() => res(), 2000);
 });
 
 const browserPromise = new Promise((res, rej) => {
   window.addEventListener('load', () => res());
 });
 
+// await new Promise((res) => {
+//   const interval = setInterval(() => {
+//     if (document.readyState === 'complete') {
+//       res();
+//       clearInterval(interval);
+//     }
+//   });
+// });
+
 (async function () {
-  console.log(document.readyState); // TEST
-  await Promise.race([PDAPromise, browserPromise]);
-  initController();
-  await loadController();
-  successfulBustUpdateController();
-  refreshStatsController();
-  viewportResizeController();
+  try {
+    console.log(document.readyState); // TEST
+    await Promise.race([PDAPromise, browserPromise]);
+    initController();
+    await loadController();
+    userSettingsController();
+    successfulBustUpdateController();
+    refreshStatsController();
+    viewportResizeController();
+  } catch (err) {
+    console.error(err); // TEST
+  }
 })();
