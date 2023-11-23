@@ -211,40 +211,37 @@ function inputValidatorCallback(event) {
   }
 }
 
-async function successfulBustFromMiniProfileMutationCallback(
-  mutationList,
-  observer
-) {
+// async function successfulBustFromMiniProfileMutationCallback(
+//   mutationList,
+//   observer
+// ) {
+//   try {
+//     console.log('MUTATION OBSERVER'); // TEST
+//     for (const mutation of mutationList) {
+//       if (!mutation.target.innerText) return;
+//       if (
+//         mutation.target.innerText.match(/^(You busted ).+/) &&
+//         mutation.addedNodes.length == 4
+//       ) {
+//         console.log('4️⃣ addedNodes'); // TEST
+//       }
+//       if (mutation.target.innerText.match(/^(You busted ).+/)) {
+//         console.log('💪', mutation); // TEST
+//         observer.disconnect();
+//         console.log('successful bust! Timestamp: ', Date.now()); // TEST
+//         addOneTimestampsArray(Math.floor(Date.now() / 1000));
+//         await loadController();
+//         successfulBustUpdateController();
+//       }
+//     }
+//   } catch (err) {
+//     console.error(err); // TEST
+//   }
+// }
+async function successfulBustMutationCallback(mutationList, observer) {
   try {
-    console.log('MUTATION OBSERVER'); // TEST
     for (const mutation of mutationList) {
-      if (!mutation.target.innerText) return;
-      if (
-        mutation.target.innerText.match(/^(You busted ).+/) &&
-        mutation.addedNodes.length == 4
-      ) {
-        console.log('4️⃣ addedNodes'); // TEST
-      }
-      if (mutation.target.innerText.match(/^(You busted ).+/)) {
-        console.log('💪', mutation); // TEST
-        observer.disconnect();
-        console.log('successful bust! Timestamp: ', Date.now()); // TEST
-        addOneTimestampsArray(Math.floor(Date.now() / 1000));
-        await loadController();
-        successfulBustUpdateController();
-      }
-    }
-  } catch (err) {
-    console.error(err); // TEST
-  }
-}
-async function successfulBustFromJailPageMutationCallback(
-  mutationList,
-  observer
-) {
-  try {
-    console.log('MUTATION OBSERVER'); // TEST
-    for (const mutation of mutationList) {
+      console.log('MUTATION OBSERVER'); // TEST
       if (
         mutation.target.innerText.match(/^(You busted ).+/) &&
         mutation.removedNodes.length > 0
@@ -261,24 +258,22 @@ async function successfulBustFromJailPageMutationCallback(
     console.error(err); // TEST
   }
 }
-function createMiniProfileMutationObserver() {
-  console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
-  const miniProfileObserver = new MutationObserver(
-    successfulBustFromMiniProfileMutationCallback
-  );
-  miniProfileObserver.observe(document, {
-    attributes: false,
-    childList: true,
-    subtree: true,
-  });
-}
+// function createMiniProfileMutationObserver() {
+//   console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
+//   const miniProfileObserver = new MutationObserver(
+//     successfulBustFromMiniProfileMutationCallback
+//   );
+//   miniProfileObserver.observe(document, {
+//     attributes: false,
+//     childList: true,
+//     subtree: true,
+//   });
+// }
 
 function createJailMutationObserver() {
   console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
-  const jailObserver = new MutationObserver(
-    successfulBustFromJailPageMutationCallback
-  );
-  jailObserver.observe(document.querySelector('ul.users-list'), {
+  const jailObserver = new MutationObserver(successfulBustMutationCallback);
+  jailObserver.observe(document, {
     attributes: false,
     childList: true,
     subtree: true,
@@ -555,6 +550,21 @@ const bustrStylesheetHTML = `<style>
       text-align: center;
     }
 
+    #buster-settings-dropdown:hover {
+      background: #fff;
+    }
+    .dark-mode #buster-settings-dropdown:hover {
+      background: #444;
+    }
+    #buster-settings-sidetab.active {
+      background: #fff;
+      color: #999
+    }
+    .dark-mode #buster-settings-sidetab.active {
+      background: #444;
+      color: #999
+    }
+
 
 
     @media screen and (max-width:1000px) {
@@ -666,6 +676,21 @@ function renderBustrSettingsTabs() {
       );
     }
   });
+
+  const dropdownMenuItemsArr = [...dropdownMenuListEl.querySelectorAll('li')];
+  // listeners for dropdown li click
+  dropdownMenuItemsArr.forEach((li) => {
+    if (li.id === 'bustr-settings-dropdown') {
+      document.querySelector('#bustr-settings').classList.add('active');
+    }
+    if (li.id === 'bustr-settings-dropdown') {
+      document.querySelector('#bustr-settings').classList.remove('active');
+    }
+  });
+  // if, #bustr-settings-dropdown
+  // then, set other forms to display none, add active class to bustr form, set categores button innerText to bustr settings
+  // if, not #bustr-settings-dropdown
+  // then, remove active class from form
 }
 
 function renderBustrSettingsForm() {
@@ -993,11 +1018,9 @@ function successfulBustUpdateController() {
   const origin = window.location.origin;
   const pathname = window.location.pathname;
 
-  createMiniProfileMutationObserver();
+  // createMiniProfileMutationObserver();
 
-  if (origin + pathname === 'https://www.torn.com/jailview.php') {
-    createJailMutationObserver();
-  }
+  createJailMutationObserver();
 }
 
 function refreshStatsController() {
