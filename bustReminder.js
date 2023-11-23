@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.2.1
+// @version      0.2.2
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -242,6 +242,7 @@ async function successfulBustMutationCallback(mutationList, observer) {
   try {
     for (const mutation of mutationList) {
       console.log('MUTATION OBSERVER'); // TEST
+      if (!mutation.target.innerText) return;
       if (
         mutation.target.innerText.match(/^(You busted ).+/) &&
         mutation.removedNodes.length > 0
@@ -550,17 +551,17 @@ const bustrStylesheetHTML = `<style>
       text-align: center;
     }
 
-    #buster-settings-dropdown:hover {
+    #bustr-settings-dropdown:hover {
       background: #fff;
     }
-    .dark-mode #buster-settings-dropdown:hover {
+    .dark-mode #prefs-tab-menu #bustr-settings-dropdown:hover {
       background: #444;
     }
-    #buster-settings-sidetab.active {
+    #prefs-tab-menu #bustr-settings-sidetab.active {
       background: #fff;
       color: #999
     }
-    .dark-mode #buster-settings-sidetab.active {
+    .dark-mode #prefs-tab-menu #bustr-settings-sidetab.active {
       background: #444;
       color: #999
     }
@@ -645,6 +646,8 @@ function renderBustrSettingsTabs() {
   const dropdownMenuListEl = document.querySelector(
     'ul.ui-selectmenu-menu-dropdown'
   );
+  const prefsTitle = document.querySelector('.prefs-tab-title');
+  const prefsContentArr = [...document.querySelectorAll('.prefs-cont')];
 
   const bustrSettingsSideTabHTML = `
     <li class="delimiter"></li>
@@ -654,7 +657,7 @@ function renderBustrSettingsTabs() {
     `;
 
   const bustrSettingsDropdownTabHTML = `
-  <li role="presentation" id='#bustr-settings-dropdown'>
+  <li role="presentation" id='bustr-settings-dropdown'>
     <a href="#nogo" tabindex="-1" role="option" aria-selected="false" id="bustr-dropdown__select">Bustr settings</a>
   </li>`;
 
@@ -679,13 +682,39 @@ function renderBustrSettingsTabs() {
 
   const dropdownMenuItemsArr = [...dropdownMenuListEl.querySelectorAll('li')];
   // listeners for dropdown li click
-  dropdownMenuItemsArr.forEach((li) => {
-    if (li.id === 'bustr-settings-dropdown') {
-      document.querySelector('#bustr-settings').classList.add('active');
-    }
-    if (li.id === 'bustr-settings-dropdown') {
-      document.querySelector('#bustr-settings').classList.remove('active');
-    }
+  dropdownMenuItemsArr.forEach((li, i, arr) => {
+    li.addEventListener('click', (e) => {
+      if (li.id === 'bustr-settings-dropdown') {
+        prefsContentArr.forEach((el) => {
+          if (el.id !== 'bustr-settings') el.style.display = 'none';
+        });
+        document.querySelector('#bustr-settings').style.display = 'block';
+        arr.forEach((li) => li.classList.remove(''));
+        dropdownCategoriesBtn.textContent = 'Bustr settings';
+        prefsTitle.textContent = 'Change your bust reminder settings';
+      }
+      if (li.id !== 'bustr-settings-dropdown') {
+        document.querySelector('#bustr-settings').classList.remove('active');
+        document.querySelector('#bustr-settings').style.display = 'none';
+      }
+    });
+    sideMenuTabsElArr.forEach((li, i, arr) => {
+      li.addEventListener('click', (e) => {
+        if (li.id === 'bustr-settings-sidetab') {
+          prefsContentArr.forEach((el) => {
+            if (el.id !== 'bustr-settings') el.style.display = 'none';
+          });
+          document.querySelector('#bustr-settings').style.display = 'block';
+          arr.forEach((li) => li.classList.remove(''));
+          dropdownCategoriesBtn.textContent = 'Bustr settings';
+          prefsTitle.textContent = 'Change your bust reminder settings';
+        }
+        if (li.id !== 'bustr-settings-sidetab') {
+          document.querySelector('#bustr-settings').classList.remove('active');
+          document.querySelector('#bustr-settings').style.display = 'none';
+        }
+      });
+    });
   });
   // if, #bustr-settings-dropdown
   // then, set other forms to display none, add active class to bustr form, set categores button innerText to bustr settings
