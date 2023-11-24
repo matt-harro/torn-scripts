@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.2.3
+// @version      0.2.4
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -25,6 +25,7 @@ let GLOBAL_BUSTR_STATE = {
     customPenaltyThreshold: 0,
     quickBust: true,
     quickBail: false,
+    showHardnessScore: true,
   },
   penaltyScore: 0,
   penaltyThreshold: 0,
@@ -1164,7 +1165,9 @@ const browserPromise = new Promise((res, rej) => {
     initController();
     await loadController();
     userSettingsController();
-    hardnessScoreController();
+    if (getUserSettings.showHardnessScore) {
+      hardnessScoreController();
+    }
     successfulBustUpdateController();
     refreshStatsController();
     viewportResizeController();
