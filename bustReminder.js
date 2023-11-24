@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.2.2
+// @version      0.2.3
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -157,10 +157,7 @@ async function fetchBustsData(apiKey) {
     console.log('res', response); // TEST
     console.log('data', data); // TEST
     if (data.error) {
-      if (
-        data.error.error === 'Incorrect key' ||
-        data.error.error === 'Access level of this key is not high enough'
-      ) {
+      if (data.error.error === 'Incorrect key' || data.error.error === 'Access level of this key is not high enough') {
         throw new Error(`Error: ${data.error.error}`);
       }
       throw new Error('Something went wrong');
@@ -243,10 +240,7 @@ async function successfulBustMutationCallback(mutationList, observer) {
     for (const mutation of mutationList) {
       console.log('MUTATION OBSERVER'); // TEST
       if (!mutation.target.innerText) return;
-      if (
-        mutation.target.innerText.match(/^(You busted ).+/) &&
-        mutation.removedNodes.length > 0
-      ) {
+      if (mutation.target.innerText.match(/^(You busted ).+/) && mutation.removedNodes.length > 0) {
         console.log('💪🏾', mutation); // TEST
         observer.disconnect();
         console.log('successful bust! Timestamp: ', Date.now()); // TEST
@@ -299,10 +293,7 @@ function loadGlobalBustrState() {
   return localStorage.getItem('globalBustrState');
 }
 function saveGlobalBustrState() {
-  localStorage.setItem(
-    'globalBustrState',
-    JSON.stringify(getGlobalBustrState())
-  );
+  localStorage.setItem('globalBustrState', JSON.stringify(getGlobalBustrState()));
 }
 function deleteGlobalBustrState() {
   GLOBAL_BUSTR_STATE = {
@@ -380,13 +371,7 @@ function addOneTimestampsArray(timestamp, currentState) {
   currentState = currentState || getGlobalBustrState();
 
   const newTimestampsArr = [timestamp, ...currentState.timestampsArray];
-  console.log(
-    'old TSA: ',
-    currentState.timestampsArray.length,
-    'new TSA: ',
-    newTimestampsArr.length,
-    newTimestampsArr
-  ); // TEST
+  console.log('old TSA: ', currentState.timestampsArray.length, 'new TSA: ', newTimestampsArr.length, newTimestampsArr); // TEST
   setTimestampsArray(newTimestampsArr);
 }
 function getTimestampsArray() {
@@ -439,149 +424,243 @@ function getAvailableBusts() {
 ////////  VIEW  ////////
 ////  Stylesheet
 const bustrStylesheetHTML = `<style>
-    .bustr--green {
-      --color: ${green}
-    }
-    .bustr--orange {
-      --color: ${orange}
-    }
-    .bustr--red {
-      --color: ${red}
-    }
-    .dark-mode.bustr--green,
-    .bustr--green .swiper-slide {
-      --color: ${greenLight}
-    }
-    .dark-mode.bustr--orange,
-    .bustr--orange .swiper-slide {
-      --color: ${orangeLight}
-    }
-    .dark-mode.bustr--red,
-    .bustr--red .swiper-slide {
-      --color: ${redLight}
-    }
-    .bg-gradient--green{
-      --gradient-green: linear-gradient(to bottom, rgba(143, 113, 113, 1) 0, rgba(92, 62, 62, 1) 100%);
-    }
+  .bustr--green {
+    --color: ${green}
+  }
+  .bustr--orange {
+    --color: ${orange}
+  }
+  .bustr--red {
+    --color: ${red}
+  }
+  .dark-mode.bustr--green,
+  .bustr--green .swiper-slide {
+    --color: ${greenLight}
+  }
+  .dark-mode.bustr--orange,
+  .bustr--orange .swiper-slide {
+    --color: ${orangeLight}
+  }
+  .dark-mode.bustr--red,
+  .bustr--red .swiper-slide {
+    --color: ${redLight}
+  }
+  .bg-gradient--green{
+    --gradient-green: linear-gradient(to bottom, rgba(143, 113, 113, 1) 0, rgba(92, 62, 62, 1) 100%);
+  }
 
-    #bustr-form.header-wrapper-top {
-      display: flex;
-    }
-    #bustr-form.header-wrapper-top .container {
-      display: flex;
-      justify-content: start;
-      align-items: center;
-      pading-left: 20px;
-    }
+  #bustr-form.header-wrapper-top {
+    display: flex;
+  }
+  #bustr-form.header-wrapper-top .container {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    padding-left: 20px;
+  }
 
+  #bustr-form.header-wrapper-top h2 {
+    display: block;
+    text-align: center;
+    margin: 0;
+    width: 172px;
+  }
+
+  #bustr-form.header-wrapper-top input {
+    background: linear-gradient(0deg,#111,#000);
+    border-radius: 5px;
+    box-shadow: 0 1px 0 hsla(0,0%,100%,.102);
+    box-sizing: border-box;
+    color: #9f9f9f;
+    display: inline;
+    font-weight: 400;
+    height: 24px;
+    width: clamp(170px, 50%, 250px);
+    margin: 0 0 0 21px;
+    outline: none;
+    padding: 0 10px 0 10px;
+    
+    font-size: 12px;
+    font-style: italic; 
+    vertical-align: middle;
+    border: 0;
+    text-shadow: none;
+    z-index: 100;
+  }
+  #bustr-form.header-wrapper-top a {
+    margin: 0 8px;
+  }
+
+  #nav-jail .bustr-stats,
+  #bustr-context .bustr-stats {
+    color: var(--color, inherit);
+  }
+  #nav-jail .bustr-stats span {
+    margin-left: unset;
+  }
+
+  #bustr-context.contextMenu___bjhoL {
+    display: none;
+    left: unset;
+    right: -92px;
+    padding: 0 8px;
+  }
+  .contextMenuActive___e6i_B #bustr-context.contextMenu___bjhoL {
+    display: flex;
+  }
+  #bustr-context.contextMenu___bjhoL .arrow___tKP13 {
+    right: unset;
+    left: -6px;
+    border-width: 8px 6px 8px 0;
+    border-color: transparent #444 transparent transparent;
+  }
+  #bustr-context.contextMenu___bjhoL .arrow___tKP13:before {
+    border-color: transparent #373636 transparent transparent;
+    border-width: 6px 5px 6px 0;
+    content: "";
+    left: unset;
+    right: -6px;
+    top: -6px;
+  }
+
+  #prefs-tab-menu #bustr-settings {
+    display: none;
+  }
+  #prefs-tab-menu #bustr-settings.active {
+    display: block;
+  }
+  #bustr-settings input[type="number"] {
+    height: 24px;
+    width: 48px;
+    padding: 1px 5px;
+    text-align: center;
+  }
+
+  #bustr-settings-dropdown:hover {
+    background: #fff;
+  }
+  .dark-mode #prefs-tab-menu #bustr-settings-dropdown:hover {
+    background: #444;
+  }
+  #prefs-tab-menu #bustr-settings-sidetab.active {
+    background: #fff;
+    color: #999
+  }
+  .dark-mode #prefs-tab-menu #bustr-settings-sidetab.active {
+    background: #444;
+    color: #999
+  }
+
+  #body .users-list-title {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+  }
+  #body .users-list-title .title{
+    width: 269px;
+  }
+  #body .users-list-title .time{
+    width: 50px;
+  }
+  #body .users-list-title .level{
+    width: 53px;
+  }
+  #body .users-list-title .reason{
+    width: 205px;
+  }
+  #body .users-list-title .hardness{
+    display: block;
+    width: 79px;
+    text-align: center;
+  }
+
+  #body .user-info-list-wrap > li .info-wrap .hardness {
+    display: block; 
+    text-align: center;
+  }
+  #body .user-info-list-wrap > li .info-wrap .hardness span.title {
+    display: none;
+  }
+
+  #body .user-info-list-wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+  }
+  #body .user-info-list-wrap > li  {
+    display: flex; 
+    flex-wrap: wrap; 
+    justify-content: start; 
+    align-items: center;
+  }
+
+  #body .user-info-list-wrap > li .info-wrap {
+    display: flex; 
+    flex-wrap: wrap;
+    justify-content: start; 
+    align-items: center;
+  }
+  #body .user-info-list-wrap > li .info-wrap .time {
+    width: 54px;
+  }
+  #body .user-info-list-wrap > li .info-wrap .level {
+    width: 57px;
+  }
+  #body .user-info-list-wrap > li .info-wrap .reason {
+    width: 193px;
+  }
+  #body .user-info-list-wrap > li .info-wrap .hardness {
+    width: 50px;
+  }
+
+  @media screen and (max-width:1000px) {
     #bustr-form.header-wrapper-top h2 {
-      display: block;
-      text-align: center;
-      margin: 0;
-      width: 172px;
+      width: 148px;
     }
-
     #bustr-form.header-wrapper-top input {
-      background: linear-gradient(0deg,#111,#000);
-      border-radius: 5px;
-      box-shadow: 0 1px 0 hsla(0,0%,100%,.102);
-      box-sizing: border-box;
-      color: #9f9f9f;
-      display: inline;
-      font-weight: 400;
-      height: 24px;
-      width: clamp(170px, 50%, 250px);
-      margin: 0 0 0 21px;
-      outline: none;
-      padding: 0 10px 0 10px;
-      
-      font-size: 12px;
-      font-style: italic; 
-      vertical-align: middle;
-      border: 0;
-      text-shadow: none;
-      z-index: 100;
+      margin-left: 10px;
     }
-    #bustr-form.header-wrapper-top a {
-      margin: 0 8px;
+  }
+  @media screen and (max-width:784px) {
+    #bustr-form.header-wrapper-top h2 {
+      font-size: 16px;
+      width: 80px;
     }
-
-    #nav-jail .bustr-stats,
-    #bustr-context .bustr-stats {
-      color: var(--color, inherit);
-    }
-    #nav-jail .bustr-stats span {
-      margin-left: unset;
-    }
-
-    #bustr-context.contextMenu___bjhoL {
-      display: none;
-      left: unset;
-      right: -92px;
-      padding: 0 8px;
-    }
-    .contextMenuActive___e6i_B #bustr-context.contextMenu___bjhoL {
-      display: flex;
-    }
-    #bustr-context.contextMenu___bjhoL .arrow___tKP13 {
-      right: unset;
-      left: -6px;
-      border-width: 8px 6px 8px 0;
-      border-color: transparent #444 transparent transparent;
-    }
-    #bustr-context.contextMenu___bjhoL .arrow___tKP13:before {
-      border-color: transparent #373636 transparent transparent;
-      border-width: 6px 5px 6px 0;
-      content: "";
-      left: unset;
-      right: -6px;
-      top: -6px;
-    }
-
-    #prefs-tab-menu #bustr-settings {
+    #body .users-list-title .hardness{
       display: none;
     }
-    #prefs-tab-menu #bustr-settings.active {
+    #body .user-info-list-wrap > li .info-wrap .hardness span.title{
       display: block;
     }
-    #bustr-settings input[type="number"] {
-      height: 24px;
-      width: 48px;
-      padding: 1px 5px;
-      text-align: center;
+    #body .user-info-list-wrap > li .info-wrap .reason {
+      width: 164px;
+      border-right: 1px solid rgb(34, 34, 34);
     }
-
-    #bustr-settings-dropdown:hover {
-      background: #fff;
+    #body .user-info-list-wrap > li .info-wrap .hardness {
+      width: 64px;
     }
-    .dark-mode #prefs-tab-menu #bustr-settings-dropdown:hover {
-      background: #444;
-    }
-    #prefs-tab-menu #bustr-settings-sidetab.active {
-      background: #fff;
-      color: #999
-    }
-    .dark-mode #prefs-tab-menu #bustr-settings-sidetab.active {
-      background: #444;
-      color: #999
-    }
-
-
-
-    @media screen and (max-width:1000px) {
-      #bustr-form.header-wrapper-top h2 {
-        width: 148px;
+  }
+    @media screen and (max-width:386px) {
+      
+      #body .user-info-list-wrap > li .info-wrap .time {
+        width: 98px;
+        height: 37px;
       }
-      #bustr-form.header-wrapper-top input {
-        margin-left: 10px;
+      #body .user-info-list-wrap > li .info-wrap .level {
+        width: 91px;
+        height: 37px;
+      }
+      #body .user-info-list-wrap > li .info-wrap .reason {
+        width: 171px;
+        height: 24px;
+        border-right: 1px solid rgb(34, 34, 34);
+      }
+      #body .user-info-list-wrap > li .info-wrap .hardness {
+        width: 107px;
       }
     }
-    @media screen and (max-width:784px) {
-      #bustr-form.header-wrapper-top h2 {
-        font-size: 16px;
-        width: 80px;
-      }
-    }
+  }
     </style>`;
 function renderBustrStylesheet() {
   console.log('RENDER STYLESHEET'); // TEST
@@ -606,10 +685,7 @@ function renderBustrColorClass(availableBusts) {
     return;
   }
 
-  if (
-    availableBusts > getUserSettings().reminderLimits.redLimit &&
-    availableBusts < getUserSettings().reminderLimits.greenLimit
-  ) {
+  if (availableBusts > getUserSettings().reminderLimits.redLimit && availableBusts < getUserSettings().reminderLimits.greenLimit) {
     document.body.classList.add('bustr--orange');
   }
 }
@@ -639,13 +715,9 @@ function dismountBustrForm() {
 
 function renderBustrSettingsTabs() {
   console.log('RENDER SETTINGS TABS'); // TEST
-  const sideMenuTabsElArr = [
-    ...document.querySelectorAll('#prefs-tab-menu .headers li'),
-  ];
+  const sideMenuTabsElArr = [...document.querySelectorAll('#prefs-tab-menu .headers li')];
   const dropdownCategoriesBtn = document.querySelector('#categories-button');
-  const dropdownMenuListEl = document.querySelector(
-    'ul.ui-selectmenu-menu-dropdown'
-  );
+  const dropdownMenuListEl = document.querySelector('ul.ui-selectmenu-menu-dropdown');
   const prefsTitle = document.querySelector('.prefs-tab-title');
   const prefsContentArr = [...document.querySelectorAll('.prefs-cont')];
 
@@ -663,20 +735,12 @@ function renderBustrSettingsTabs() {
 
   sideMenuTabsElArr[6].insertAdjacentHTML('afterend', bustrSettingsSideTabHTML);
 
-  dropdownMenuListEl.insertAdjacentHTML(
-    'afterbegin',
-    bustrSettingsDropdownTabHTML
-  );
+  dropdownMenuListEl.insertAdjacentHTML('afterbegin', bustrSettingsDropdownTabHTML);
   dropdownCategoriesBtn.addEventListener('click', () => {
     console.log('👶🏻', dropdownMenuListEl.children); // TEST
-    const busterDropdownIsChild = [...dropdownMenuListEl.children].filter(
-      (child) => child.id === 'bustr-settings-dropdown'
-    );
+    const busterDropdownIsChild = [...dropdownMenuListEl.children].filter((child) => child.id === 'bustr-settings-dropdown');
     if (!busterDropdownIsChild) {
-      dropdownMenuListEl.insertAdjacentHTML(
-        'afterbegin',
-        bustrSettingsDropdownTabHTML
-      );
+      dropdownMenuListEl.insertAdjacentHTML('afterbegin', bustrSettingsDropdownTabHTML);
     }
   });
 
@@ -731,152 +795,83 @@ function renderBustrSettingsForm() {
   // active tab class : ui-state-active
 
   bustrSettingsFormHTML = `
-  <div
-      id="bustr-settings"
-      class="prefs-cont left ui-tabs-panel ui-widget-content ui-corner-bottom"
-      aria-labelledby="ui-id-3"
-      role="tabpanel"
-      aria-expanded="true"
-      aria-hidden="false"
-    >
-    <div class="inner-block b-border-c t-border-f">
-      <ul class="prefs-list small-select-menu-wrap">
-        <li>
-          <p class="m-bottom5">Custom Penalty Threshold: </p>
-          <input
-            type="number"
-            name="customThreshold"
-            id="bustr-custom-threshold"
-            size="5"
-            value="0"
-            min="0"
-          />
-        </li>
-      </ul>
-    </div>
-    <div class="inner-block b-border-c t-border-f">
-      <ul class="prefs-list small-select-menu-wrap">
-        <li>
-          <p class="m-bottom5">Custom Penalty Threshold: </p>
-          <input
-            type="number"
-            name="customThreshold"
-            id="bustr-custom-threshold"
-            size="5"
-            value="0"
-            min="0"
-          />
-        </li>
-      </ul>
-    </div>
-    <div class="inner-block b-border-c t-border-f">
-      <ul class="prefs-list attack-pref-block small-select-menu-wrap">
-        <li role="radiogroup">
-          <div class="title left">Quick Bust</div>
-          <div class="choice-container left-position">
-            <input
-              id="quick-bust-on"
-              class="radio-css"
-              type="radio"
-              name="quick-bust"
-              value="true"
-              checked="checked"
-            />
-            <label for="quick-bust-on" class="marker-css"
-              >On</label
-            >
-          </div>
-          <div class="choice-container right-position">
-            <input
-              id="quick-bust-off"
-              class="radio-css"
-              type="radio"
-              name="quick-bust"
-              value="false"
-            />
-            <label for="quick-bust-off" class="marker-css">Off</label>
-          </div>
-          <div class="clear"></div>
-        </li>
-        <li role="radiogroup">
-          <div class="title left">Quick Bail</div>
-          <div class="choice-container left-position">
-            <input
-              id="quick-bail-on"
-              class="radio-css"
-              type="radio"
-              name="quick-bail"
-              value="true"
-              checked="checked"
-            />
-            <label for="quick-bail-on" class="marker-css"
-              >On</label
-            >
-          </div>
-          <div class="choice-container right-position">
-            <input
-              id="quick-bail-off"
-              class="radio-css"
-              type="radio"
-              name="quick-bail"
-              value="false"
-            />
-            <label for="quick-bail-off" class="marker-css">Off</label>
-          </div>
-          <div class="clear"></div>
-        </li>
-      </ul>
-    </div>
-      <div class="inner-block b-border-c t-border-f">
-        <ul class="prefs-list small-select-menu-wrap">
-          <li>
-            <p class="m-bottom5">Red Limit: </p>
-            <input
-              type="number"
-              name="redLimit"
-              id="bustr-red-input"
-              size="5"
-              value="0"
-              min="0"
-            />
-          </li>
-          <li>
-            <p class="m-top10 m-bottom5">Green Limit: </p>
-            <input
-              id="bustr-green-input"
-              type="number"
-              name="Red Limit"
-              value="3"
-              size="5"
-            />
-          </li>
-        </ul>
-      </div>
-      <div class="inner-block b-border-c t-border-f">
-        <ul class="prefs-list small-select-menu-wrap">
-          <li>
-            <p class="m-top10 m-bottom5">Stats Refresh Rate (seconds): </p>
-            <input type="number" name="city" id="bustr-refresh-input" size="5" value="30" />
-          </li>
-          <li>
-            <p class="m-top10 m-bottom5">API Refresh Rate (minutes): </p>
-            <input type="number" name="API Refetch Rate" id="bustr-refetch-input" value="10" />
-          </li>
-        </ul>
-      </div>
-      <div class="inner-block t-border-f">
-        <div class="btn-wrap silver">
-          <div class="btn">
-            <input
-              class="torn-btn update"
-              type="submit"
-              value="SAVE"
-              id="bustr-save-btn"
-            />
+    div id="bustr-settings" class="prefs-cont left ui-tabs-panel ui-widget-content ui-corner-bottom" aria-labelledby="ui-id-3" role="tabpanel" aria-expanded="true" aria-hidden="false">
+        <div class="inner-block b-border-c t-border-f">
+          <ul class="prefs-list small-select-menu-wrap">
+            <li>
+              <p class="m-bottom5">Custom Penalty Threshold:</p>
+              <input type="number" name="customThreshold" id="bustr-custom-threshold" size="5" value="0" min="0" />
+            </li>
+          </ul>
+        </div>
+        <div class="inner-block b-border-c t-border-f">
+          <ul class="prefs-list small-select-menu-wrap">
+            <li>
+              <p class="m-bottom5">Custom Penalty Threshold:</p>
+              <input type="number" name="customThreshold" id="bustr-custom-threshold" size="5" value="0" min="0" />
+            </li>
+          </ul>
+        </div>
+        <div class="inner-block b-border-c t-border-f">
+          <ul class="prefs-list attack-pref-block small-select-menu-wrap">
+            <li role="radiogroup">
+              <div class="title left">Quick Bust</div>
+              <div class="choice-container left-position">
+                <input id="quick-bust-on" class="radio-css" type="radio" name="quick-bust" value="true" checked="checked" />
+                <label for="quick-bust-on" class="marker-css">On</label>
+              </div>
+              <div class="choice-container right-position">
+                <input id="quick-bust-off" class="radio-css" type="radio" name="quick-bust" value="false" />
+                <label for="quick-bust-off" class="marker-css">Off</label>
+              </div>
+              <div class="clear"></div>
+            </li>
+            <li role="radiogroup">
+              <div class="title left">Quick Bail</div>
+              <div class="choice-container left-position">
+                <input id="quick-bail-on" class="radio-css" type="radio" name="quick-bail" value="true" checked="checked" />
+                <label for="quick-bail-on" class="marker-css">On</label>
+              </div>
+              <div class="choice-container right-position">
+                <input id="quick-bail-off" class="radio-css" type="radio" name="quick-bail" value="false" />
+                <label for="quick-bail-off" class="marker-css">Off</label>
+              </div>
+              <div class="clear"></div>
+            </li>
+          </ul>
+        </div>
+        <div class="inner-block b-border-c t-border-f">
+          <ul class="prefs-list small-select-menu-wrap">
+            <li>
+              <p class="m-bottom5">Red Limit:</p>
+              <input type="number" name="redLimit" id="bustr-red-input" size="5" value="0" min="0" />
+            </li>
+            <li>
+              <p class="m-top10 m-bottom5">Green Limit:</p>
+              <input id="bustr-green-input" type="number" name="Red Limit" value="3" size="5" />
+            </li>
+          </ul>
+        </div>
+        <div class="inner-block b-border-c t-border-f">
+          <ul class="prefs-list small-select-menu-wrap">
+            <li>
+              <p class="m-top10 m-bottom5">Stats Refresh Rate (seconds):</p>
+              <input type="number" name="city" id="bustr-refresh-input" size="5" value="30" />
+            </li>
+            <li>
+              <p class="m-top10 m-bottom5">API Refresh Rate (minutes):</p>
+              <input type="number" name="API Refetch Rate" id="bustr-refetch-input" value="10" />
+            </li>
+          </ul>
+        </div>
+        <div class="inner-block t-border-f">
+          <div class="btn-wrap silver">
+            <div class="btn">
+              <input class="torn-btn update" type="submit" value="SAVE" id="bustr-save-btn" />
+            </div>
           </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
 
   sideMenuTabsListEl.insertAdjacentHTML('afterend', bustrSettingsFormHTML);
 }
@@ -985,19 +980,13 @@ async function initController() {
 
     // set event liseners
     //// Event listeners
-    document
-      .querySelector('#bustr-form__submit')
-      .addEventListener('click', submitFormCallback);
-    document
-      .querySelector('#bustr-form__input')
-      .addEventListener('input', inputValidatorCallback);
-    document
-      .querySelector('#bustr-form__input')
-      .addEventListener('keyup', (event) => {
-        if (event.key === 'Enter' || event.keyCode === 13) {
-          submitFormCallback();
-        }
-      });
+    document.querySelector('#bustr-form__submit').addEventListener('click', submitFormCallback);
+    document.querySelector('#bustr-form__input').addEventListener('input', inputValidatorCallback);
+    document.querySelector('#bustr-form__input').addEventListener('keyup', (event) => {
+      if (event.key === 'Enter' || event.keyCode === 13) {
+        submitFormCallback();
+      }
+    });
   } catch (err) {
     console.error(err); // TEST
   }
@@ -1015,11 +1004,7 @@ async function loadController() {
     }
 
     // fetch data
-    if (
-      getTimestampsArray().length === 0 ||
-      Date.now() - getLastFecthTimestampMs() > 1000 * 60 * 10 ||
-      !getLastFecthTimestampMs()
-    ) {
+    if (getTimestampsArray().length === 0 || Date.now() - getLastFecthTimestampMs() > 1000 * 60 * 10 || !getLastFecthTimestampMs()) {
       console.log('fetching data'); // TEST
       const data = await fetchBustsData(getApiKey());
       setTimestampsArray(createTimestampsArray(data));
@@ -1076,6 +1061,82 @@ function userSettingsController() {
   renderBustrSettingsForm();
 }
 
+function renderHardnessJailView() {
+  const headingsContainerEl = document.querySelector('.users-list-title');
+  const hardnessTitleHTML = `
+    <span class="hardness title-divider divider-spiky">Hardness</span>`;
+  headingsContainerEl.children[3].insertAdjacentHTML('afterend', hardnessTitleHTML);
+
+  const playerRowsArr = [...document.querySelectorAll('.user-info-list-wrap > li')];
+  playerRowsArr.forEach((el) => {
+    const playerInfoContainerEl = el.querySelector('.info-wrap');
+    const hardnessScoreHTML = `
+      <span class="hardness reason">
+        <span class="title bold">HARDNESS</span>
+        <span class="bustr-hardness-score">#####</span>
+      </span>`;
+    playerInfoContainerEl.children[2].insertAdjacentHTML('afterend', hardnessScoreHTML);
+  });
+}
+
+function getLevelJailDurationInfo(playerEl) {
+  const levelEl = playerEl.querySelector('.level');
+  const durationEl = playerEl.querySelector('.time');
+
+  const level = +levelEl.innerText.match(/\d+/)[0];
+  const hours = +durationEl.innerText.match(/\d+(?=h)/) || 0;
+  const mins = +durationEl.innerText.match(/\d+(?=m)/) || 0;
+  const durationInHours = hours + mins / 60;
+
+  return [level, +durationInHours];
+}
+
+function calcHardnessScore(level, durationInHours) {
+  return Math.floor(level * (durationInHours + 3));
+}
+
+function renderHardnessScore(playerEl, hardnessScore) {
+  playerEl.querySelector('.bustr-hardness-score').textContent = hardnessScore;
+}
+
+function sortByHardnessScore(playerEl, hardnessScore) {
+  playerEl.style.order = hardnessScore;
+}
+
+function mountJailPlayerCallback(mutationList, observer) {
+  for (const mutation of mutationList) {
+    if (mutation.target.classList.contains('user-info-list-wrap') && mutation.addedNodes.length > 1) {
+      hardnessScoreController();
+      observer.disconnect();
+    }
+  }
+}
+
+function createMountJailPlayerOberserver() {
+  const mountJailPlayerObserver = new MutationObserver(mountJailPlayerCallback);
+  mountJailPlayerObserver.observe(document, {
+    attributes: false,
+    childList: true,
+    subtree: true,
+  });
+}
+
+function hardnessScoreController() {
+  if (window.location.pathname !== '/jailview.php') return;
+  console.log('HARDNESSSCORECONTROLLER'); // TEST
+  createMountJailPlayerOberserver();
+
+  renderHardnessJailView();
+  const playersArr = [...document.querySelectorAll('ul.user-info-list-wrap > li')];
+
+  for (const playerEl of playersArr) {
+    const [level, durationInHours] = getLevelJailDurationInfo(playerEl);
+    const hardnessScore = calcHardnessScore(level, durationInHours);
+    renderHardnessScore(playerEl, hardnessScore);
+    sortByHardnessScore(playerEl, hardnessScore);
+  }
+}
+
 //// Promise race conditions
 // necessary as PDA scripts are inject after window.onload
 
@@ -1103,6 +1164,7 @@ const browserPromise = new Promise((res, rej) => {
     initController();
     await loadController();
     userSettingsController();
+    hardnessScoreController();
     successfulBustUpdateController();
     refreshStatsController();
     viewportResizeController();
