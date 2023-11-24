@@ -1066,7 +1066,9 @@ function renderHardnessJailView() {
   const headingsContainerEl = document.querySelector('.users-list-title');
   const hardnessTitleHTML = `
     <span class="hardness title-divider divider-spiky">Hardness</span>`;
-  headingsContainerEl.children[3].insertAdjacentHTML('afterend', hardnessTitleHTML);
+  if (!headingsContainerEl.querySelector('span.hardness')) {
+    headingsContainerEl.children[3].insertAdjacentHTML('afterend', hardnessTitleHTML);
+  }
 
   const playerRowsArr = [...document.querySelectorAll('.user-info-list-wrap > li')];
   playerRowsArr.forEach((el) => {
