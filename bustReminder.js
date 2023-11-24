@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.2.4
+// @version      0.2.5
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -796,7 +796,7 @@ function renderBustrSettingsForm() {
   // active tab class : ui-state-active
 
   bustrSettingsFormHTML = `
-    div id="bustr-settings" class="prefs-cont left ui-tabs-panel ui-widget-content ui-corner-bottom" aria-labelledby="ui-id-3" role="tabpanel" aria-expanded="true" aria-hidden="false">
+    <div id="bustr-settings" class="prefs-cont left ui-tabs-panel ui-widget-content ui-corner-bottom" aria-labelledby="ui-id-3" role="tabpanel" aria-expanded="true" aria-hidden="false">
         <div class="inner-block b-border-c t-border-f">
           <ul class="prefs-list small-select-menu-wrap">
             <li>
@@ -1165,7 +1165,7 @@ const browserPromise = new Promise((res, rej) => {
     initController();
     await loadController();
     userSettingsController();
-    if (getUserSettings.showHardnessScore) {
+    if (getUserSettings().showHardnessScore) {
       hardnessScoreController();
     }
     successfulBustUpdateController();
