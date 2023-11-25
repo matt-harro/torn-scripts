@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         Torn War Highlighter - offline/idle & okay
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0
+// @version      1.0.1
 // @description  Sexily highlights war enemies that are 'offline | idle' and 'Okay'.
 // @author       Ironhydedragon
 // @match        https://www.torn.com/factions*
@@ -35,9 +35,9 @@
 
   const stylesheetHTML = `
   <style>
-    li.enemy {
+    #body li.enemy {
       margin-top: -1px;
-      z-index: 100;
+      width: 100%;
     }
     #body ul.members-list li.enemy.wh-isAttackable {
       z-index: 200;
