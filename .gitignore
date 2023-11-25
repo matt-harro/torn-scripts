@@ -1,3 +1,5 @@
+.prettierrc
+.DS_Store
 updates.md
-playground.html
 playground.css
+playground.html

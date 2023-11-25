@@ -35,6 +35,22 @@ let GLOBAL_BUSTR_STATE = {
   renderedView: undefined,
 };
 
+////  Colors
+const red = '#E54C19';
+const redLight = 'rgb(255, 168, 168)';
+
+const orange = '#B25900';
+const orangeLight = '#FFBF00';
+
+const green = ''; // link color
+const greenLight = '#85b200'; // Icon Color
+
+const white = 'rgb(51, 51, 51)';
+
+////  SVG Gradients
+const greenSvgGradient = 'url(#sidebar_svg_gradient_regular_green_mobile';
+const orangeSvgGradient = 'url(#svg_status_idle';
+
 const PDA_API_KEY = '###PDA-APIKEY###';
 function isPDA() {
   const PDATestRegex = !/^(###).+(###)$/.test(PDA_API_KEY);
@@ -298,6 +314,7 @@ function saveGlobalBustrState() {
 }
 function deleteGlobalBustrState() {
   GLOBAL_BUSTR_STATE = {
+
     userSettings: {
       reminderLimits: {
         redLimit: 0,
@@ -329,7 +346,6 @@ function getApiKey() {
   console.log('GET API KEY'); // TEST
 
   if (isPDA()) return PDA_API_KEY;
-
   if (!localStorage.getItem('bustrApiKey')) return;
 
   return JSON.parse(localStorage.getItem('bustrApiKey'));
@@ -674,7 +690,7 @@ function renderBustrColorClass(availableBusts) {
   console.log('RENDER BUSTER COLOR'); // TEST
   console.log('userSettings', getUserSettings()); // TEST
 
-  const navJailEl = document.querySelector('#nav-jail');
+  const navJailParentEl = document.querySelector('#nav-jail').parentElement;
 
   if (+availableBusts <= getUserSettings().reminderLimits.redLimit) {
     document.body.classList.add('bustr--red');
@@ -875,7 +891,60 @@ function renderBustrSettingsForm() {
       </div>`;
 
   sideMenuTabsListEl.insertAdjacentHTML('afterend', bustrSettingsFormHTML);
+=======
+    navJailParentEl.classList.add('bustr--red');
+    return;
+  }
+
+  if (+availableBusts >= getUserSettings().reminderLimits.greenLimit) {
+    navJailParentEl.classList.add('available___ZS04X', 'bustr--green');
+    return;
+  }
+
+  if (
+    availableBusts > getUserSettings().reminderLimits.redLimit &&
+    availableBusts < reminderLimits.greenLimit
+  ) {
+    navJailParentEl.classList.add('bustr--orange');
+  }
 }
+//// Init form view
+function renderBustrForm() {
+  console.log('RENDER BUSTR FORM'); // TEST
+  const topHeaderBannerEl = document.querySelector('#topHeaderBanner');
+  const bustrFormHTML = `
+      <div id="bustr-form" class="header-wrapper-top">
+        <div class="container clear-fix">
+          <h2>Bustr API</h2>
+          <input
+            id="bustr-form__input"
+            type="text"
+            placeholder="Enter a full-acces API key..."
+          />
+          <a href="#" id="bustr-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
+        </div>
+      </div>`;
+
+  topHeaderBannerEl.insertAdjacentHTML('afterbegin', bustrFormHTML);
+}
+
+// function renderJailIcon() {
+//   console.log('REPLACE JAIL ICON'); // TEST
+//   const fill = 'url(#sidebar_svg_gradient_regular_green_mobile';
+
+//   const jailIconEl = document.querySelector('#nav-jail svg');
+//   const jailIconContainerEl =
+//     document.querySelector('#nav-jail svg').parentElement;
+
+//   const greenJailHTML = `
+//       <svg xmlns="http://www.w3.org/2000/svg" class="default___XXAGt " filter fill="${fill}" stroke="transparent" stroke-width="0" width="17" height="17" viewBox="0 1 17 17">
+//         <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z" filter="url(#svg_sidebar_mobile)"></path>
+//         <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z"></path>
+//       </svg>`;
+
+//   jailIconEl.remove();
+//   jailIconContainerEl.insertAdjacentHTML('afterbegin', greenJailHTML);
+// }
 
 // function renderJailIcon() {
 //   console.log('REPLACE JAIL ICON'); // TEST
@@ -1068,6 +1137,7 @@ function renderHardnessJailView() {
     <span class="hardness title-divider divider-spiky">Hardness</span>`;
   if (!headingsContainerEl.querySelector('span.hardness')) {
     headingsContainerEl.children[3].insertAdjacentHTML('afterend', hardnessTitleHTML);
+
   }
 
   const playerRowsArr = [...document.querySelectorAll('.user-info-list-wrap > li')];
