@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.0
+// @version      1.0.1
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -168,6 +168,30 @@ function calcBustrStats(timestampsArray) {
   return { penaltyScore, penaltyThreshold, availableBusts };
 }
 
+function getLevelJailDurationInfo(playerEl) {
+  const levelEl = playerEl.querySelector('.level');
+  const durationEl = playerEl.querySelector('.time');
+
+  const level = +levelEl.innerText.match(/\d+/)[0];
+  const hours = +durationEl.innerText.match(/\d+(?=h)/) || 0;
+  const mins = +durationEl.innerText.match(/\d+(?=m)/) || 0;
+  const durationInHours = hours + mins / 60;
+
+  return [level, +durationInHours];
+}
+
+function calcHardnessScore(level, durationInHours) {
+  return Math.floor(level * (durationInHours + 3));
+}
+
+function renderHardnessScore(playerEl, hardnessScore) {
+  playerEl.querySelector('.bustr-hardness-score').textContent = hardnessScore;
+}
+
+function sortByHardnessScore(playerEl, hardnessScore) {
+  playerEl.style.order = hardnessScore;
+}
+
 //// Callback functions
 function submitFormCallback() {
   const inputEl = document.querySelector('#bustr-form__input');
@@ -196,38 +220,12 @@ function inputValidatorCallback(event) {
   }
 }
 
-// async function successfulBustFromMiniProfileMutationCallback(
-//   mutationList,
-//   observer
-// ) {
-//   try {
-//     console.log('MUTATION OBSERVER'); // TEST
-//     for (const mutation of mutationList) {
-//       if (!mutation.target.innerText) return;
-//       if (
-//         mutation.target.innerText.match(/^(You busted ).+/) &&
-//         mutation.addedNodes.length == 4
-//       ) {
-//         console.log('4️⃣ addedNodes'); // TEST
-//       }
-//       if (mutation.target.innerText.match(/^(You busted ).+/)) {
-//         console.log('💪', mutation); // TEST
-//         observer.disconnect();
-//         console.log('successful bust! Timestamp: ', Date.now()); // TEST
-//         addOneTimestampsArray(Math.floor(Date.now() / 1000));
-//         await loadController();
-//         successfulBustUpdateController();
-//       }
-//     }
-//   } catch (err) {
-//     console.error(err); // TEST
-//   }
-// }
 async function successfulBustMutationCallback(mutationList, observer) {
   try {
     for (const mutation of mutationList) {
       if (!mutation.target.innerText) return;
       if (mutation.target.innerText.match(/^(You busted ).+/) && mutation.removedNodes.length > 0) {
+        console.log('👀 You busted...', mutation); // TEST
         observer.disconnect();
         addOneTimestampsArray(Math.floor(Date.now() / 1000));
         await loadController();
@@ -238,21 +236,29 @@ async function successfulBustMutationCallback(mutationList, observer) {
     console.error(err);
   }
 }
-// function createMiniProfileMutationObserver() {
-//   console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
-//   const miniProfileObserver = new MutationObserver(
-//     successfulBustFromMiniProfileMutationCallback
-//   );
-//   miniProfileObserver.observe(document, {
-//     attributes: false,
-//     childList: true,
-//     subtree: true,
-//   });
-// }
 
+function mountJailPlayerCallback(mutationList, observer) {
+  for (const mutation of mutationList) {
+    if (mutation.target.classList.contains('user-info-list-wrap') && mutation.addedNodes.length > 1) {
+      hardnessScoreController();
+      observer.disconnect();
+    }
+  }
+}
+
+//// Observers
 function createJailMutationObserver() {
   const jailObserver = new MutationObserver(successfulBustMutationCallback);
   jailObserver.observe(document, {
+    attributes: false,
+    childList: true,
+    subtree: true,
+  });
+}
+
+function createMountJailPlayerOberserver() {
+  const mountJailPlayerObserver = new MutationObserver(mountJailPlayerCallback);
+  mountJailPlayerObserver.observe(document, {
     attributes: false,
     childList: true,
     subtree: true,
@@ -908,6 +914,26 @@ function renderBustrMobileView() {
   navJailEl.insertAdjacentHTML('afterend', bustrContextMenuHTML);
 }
 
+function renderHardnessJailView() {
+  const headingsContainerEl = document.querySelector('.users-list-title');
+  const hardnessTitleHTML = `
+    <span class="hardness title-divider divider-spiky">Hardness</span>`;
+  if (!headingsContainerEl.querySelector('span.hardness')) {
+    headingsContainerEl.children[3].insertAdjacentHTML('afterend', hardnessTitleHTML);
+  }
+
+  const playerRowsArr = [...document.querySelectorAll('.user-info-list-wrap > li')];
+  playerRowsArr.forEach((el) => {
+    const playerInfoContainerEl = el.querySelector('.info-wrap');
+    const hardnessScoreHTML = `
+      <span class="hardness reason">
+        <span class="title bold">HARDNESS</span>
+        <span class="bustr-hardness-score">#####</span>
+      </span>`;
+    playerInfoContainerEl.children[2].insertAdjacentHTML('afterend', hardnessScoreHTML);
+  });
+}
+
 ////////  CONTROLLERS  ////////
 async function initController() {
   try {
@@ -992,8 +1018,6 @@ function successfulBustUpdateController() {
   const origin = window.location.origin;
   const pathname = window.location.pathname;
 
-  // createMiniProfileMutationObserver();
-
   createJailMutationObserver();
 }
 
@@ -1020,68 +1044,6 @@ function userSettingsController() {
   if (window.location.pathname !== '/preferences.php') return;
   renderBustrSettingsTabs();
   renderBustrSettingsForm();
-}
-
-function renderHardnessJailView() {
-  const headingsContainerEl = document.querySelector('.users-list-title');
-  const hardnessTitleHTML = `
-    <span class="hardness title-divider divider-spiky">Hardness</span>`;
-  if (!headingsContainerEl.querySelector('span.hardness')) {
-    headingsContainerEl.children[3].insertAdjacentHTML('afterend', hardnessTitleHTML);
-  }
-
-  const playerRowsArr = [...document.querySelectorAll('.user-info-list-wrap > li')];
-  playerRowsArr.forEach((el) => {
-    const playerInfoContainerEl = el.querySelector('.info-wrap');
-    const hardnessScoreHTML = `
-      <span class="hardness reason">
-        <span class="title bold">HARDNESS</span>
-        <span class="bustr-hardness-score">#####</span>
-      </span>`;
-    playerInfoContainerEl.children[2].insertAdjacentHTML('afterend', hardnessScoreHTML);
-  });
-}
-
-function getLevelJailDurationInfo(playerEl) {
-  const levelEl = playerEl.querySelector('.level');
-  const durationEl = playerEl.querySelector('.time');
-
-  const level = +levelEl.innerText.match(/\d+/)[0];
-  const hours = +durationEl.innerText.match(/\d+(?=h)/) || 0;
-  const mins = +durationEl.innerText.match(/\d+(?=m)/) || 0;
-  const durationInHours = hours + mins / 60;
-
-  return [level, +durationInHours];
-}
-
-function calcHardnessScore(level, durationInHours) {
-  return Math.floor(level * (durationInHours + 3));
-}
-
-function renderHardnessScore(playerEl, hardnessScore) {
-  playerEl.querySelector('.bustr-hardness-score').textContent = hardnessScore;
-}
-
-function sortByHardnessScore(playerEl, hardnessScore) {
-  playerEl.style.order = hardnessScore;
-}
-
-function mountJailPlayerCallback(mutationList, observer) {
-  for (const mutation of mutationList) {
-    if (mutation.target.classList.contains('user-info-list-wrap') && mutation.addedNodes.length > 1) {
-      hardnessScoreController();
-      observer.disconnect();
-    }
-  }
-}
-
-function createMountJailPlayerOberserver() {
-  const mountJailPlayerObserver = new MutationObserver(mountJailPlayerCallback);
-  mountJailPlayerObserver.observe(document, {
-    attributes: false,
-    childList: true,
-    subtree: true,
-  });
 }
 
 function hardnessScoreController() {
