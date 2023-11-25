@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         Torn War Highlighter - offline/idle & okay
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.2
+// @version      1.0.3
 // @description  Sexily highlights war enemies that are 'offline | idle' and 'Okay'.
 // @author       Ironhydedragon
 // @match        https://www.torn.com/factions*
@@ -29,6 +29,8 @@
   // const green = '#4b5738';
   // const greenLight = '#57693a';
   const greetLighter = '#85b200';
+  // const greenLighterRGB = 'rgb(133, 178, 0)';
+  const greenLighterTranslucent = 'rgba(133, 178, 0, 0.25)';
   const greenTranslucent = 'rgba(75, 85, 56, 0.9)';
   // const greenLightTranslucent = 'rgba(87,105,58, 0.9)';
   // const gray = 'rgb(34, 34, 34)';
@@ -51,11 +53,15 @@
     z-index: 200;
     outline: 1px solid ${greetLighter};
     outline-offset: -2px;
+    background: ${greenLighterTranslucent};
+  }
+  #body.dark-mode ul.members-list li.enemy.wh-isAttackable {
+    background: unset;
   }
 
-    #body ul.members-list li.enemy.wh-isAttackable .attack {
-      background: ${greenTranslucent};
-    }
+  #body.dark-mode ul.members-list li.enemy.wh-isAttackable .attack {
+    background: ${greenTranslucent};
+  }
   </style>`;
 
   ////////  MODEL  ////////
