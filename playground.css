@@ -1,0 +1,209 @@
+.bustr--green {
+  --color: ${green}
+}
+.bustr--orange {
+  --color: ${orange}
+}
+.bustr--red {
+  --color: ${red}
+}
+.dark-mode.bustr--green,
+.bustr--green .swiper-slide {
+  --color: ${greenLight}
+}
+.dark-mode.bustr--orange,
+.bustr--orange .swiper-slide {
+  --color: ${orangeLight}
+}
+.dark-mode.bustr--red,
+.bustr--red .swiper-slide {
+  --color: ${redLight}
+}
+.bg-gradient--green{
+  --gradient-green: linear-gradient(to bottom, rgba(143, 113, 113, 1) 0, rgba(92, 62, 62, 1) 100%);
+}
+
+#bustr-form.header-wrapper-top {
+  display: flex;
+}
+#bustr-form.header-wrapper-top .container {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  padding-left: 20px;
+}
+
+#bustr-form.header-wrapper-top h2 {
+  display: block;
+  text-align: center;
+  margin: 0;
+  width: 172px;
+}
+
+#bustr-form.header-wrapper-top input {
+  background: linear-gradient(0deg,#111,#000);
+  border-radius: 5px;
+  box-shadow: 0 1px 0 hsla(0,0%,100%,.102);
+  box-sizing: border-box;
+  color: #9f9f9f;
+  display: inline;
+  font-weight: 400;
+  height: 24px;
+  width: clamp(170px, 50%, 250px);
+  margin: 0 0 0 21px;
+  outline: none;
+  padding: 0 10px 0 10px;
+  
+  font-size: 12px;
+  font-style: italic; 
+  vertical-align: middle;
+  border: 0;
+  text-shadow: none;
+  z-index: 100;
+}
+#bustr-form.header-wrapper-top a {
+  margin: 0 8px;
+}
+
+#nav-jail .bustr-stats,
+#bustr-context .bustr-stats {
+  color: var(--color, inherit);
+}
+#nav-jail .bustr-stats span {
+  margin-left: unset;
+}
+
+#bustr-context.contextMenu___bjhoL {
+  display: none;
+  left: unset;
+  right: -92px;
+  padding: 0 8px;
+}
+.contextMenuActive___e6i_B #bustr-context.contextMenu___bjhoL {
+  display: flex;
+}
+#bustr-context.contextMenu___bjhoL .arrow___tKP13 {
+  right: unset;
+  left: -6px;
+  border-width: 8px 6px 8px 0;
+  border-color: transparent #444 transparent transparent;
+}
+#bustr-context.contextMenu___bjhoL .arrow___tKP13:before {
+  border-color: transparent #373636 transparent transparent;
+  border-width: 6px 5px 6px 0;
+  content: "";
+  left: unset;
+  right: -6px;
+  top: -6px;
+}
+
+#prefs-tab-menu #bustr-settings {
+  display: none;
+}
+#prefs-tab-menu #bustr-settings.active {
+  display: block;
+}
+#bustr-settings input[type="number"] {
+  height: 24px;
+  width: 48px;
+  padding: 1px 5px;
+  text-align: center;
+}
+
+#bustr-settings-dropdown:hover {
+  background: #fff;
+}
+.dark-mode #prefs-tab-menu #bustr-settings-dropdown:hover {
+  background: #444;
+}
+#prefs-tab-menu #bustr-settings-sidetab.active {
+  background: #fff;
+  color: #999
+}
+.dark-mode #prefs-tab-menu #bustr-settings-sidetab.active {
+  background: #444;
+  color: #999
+}
+
+#body .users-list-title {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+}
+#body .users-list-title .title{
+  width: 269px;
+}
+#body .users-list-title .time{
+  width: 50px;
+}
+#body .users-list-title .level{
+  width: 53px;
+}
+#body .users-list-title .reason{
+  width: 205px;
+}
+#body .users-list-title .hardness{
+  display: block;
+  width: 79px;
+  text-align: center;
+}
+
+#body .user-info-list-wrap > li .info-wrap .hardness {
+  display: block; 
+  text-align: center;
+}
+#body .user-info-list-wrap > li .info-wrap .hardness span.title {
+  display: none;
+}
+
+#body .user-info-list-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+}
+#body .user-info-list-wrap > li  {
+  display: flex; 
+  flex-wrap: wrap; 
+  justify-content: start; 
+  align-items: center;
+}
+
+#body .user-info-list-wrap > li .info-wrap {
+  display: flex; 
+  justify-content: start; 
+  align-items: center;
+}
+#body .user-info-list-wrap > li .info-wrap .time {
+  width: 54px;
+}
+#body .user-info-list-wrap > li .info-wrap .level {
+  width: 57px;
+}
+#body .user-info-list-wrap > li .info-wrap .reason {
+  width: 193px;
+}
+#body .user-info-list-wrap > li .info-wrap .hardness {
+  width: 50px;
+}
+
+@media screen and (max-width:1000px) {
+  #bustr-form.header-wrapper-top h2 {
+    width: 148px;
+  }
+  #bustr-form.header-wrapper-top input {
+    margin-left: 10px;
+  }
+}
+@media screen and (max-width:784px) {
+  #bustr-form.header-wrapper-top h2 {
+    font-size: 16px;
+    width: 80px;
+  }
+  .r .users-list-title .hardness {
+    display: none;
+  }
+  #body .user-info-list-wrap > li .info-wrap .hardness span.title{
+    display: block;
+  }
+}
