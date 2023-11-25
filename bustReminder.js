@@ -3,14 +3,14 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.2.6
+// @version      1.0.0
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
 // @license      MIT
 // ==/UserScript==
 
-console.log('😎 START!!!!'); // TEST
+console.log('😎 BUSTR-SCRIPT ON!!!!'); // TEST
 
 ////////  GLOBAL VARIABLES
 ////  State
@@ -21,10 +21,10 @@ let GLOBAL_BUSTR_STATE = {
       greenLimit: 3,
     },
     statsRefreshRate: 30,
-    refetchRate: 10,
+    refetchRate: 600,
     customPenaltyThreshold: 0,
-    quickBust: true,
-    quickBail: false,
+    // quickBust: true,
+    // quickBail: false,
     showHardnessScore: true,
   },
   penaltyScore: 0,
@@ -35,26 +35,9 @@ let GLOBAL_BUSTR_STATE = {
   renderedView: undefined,
 };
 
-////  Colors
-const red = '#E54C19';
-const redLight = 'rgb(255, 168, 168)';
-
-const orange = '#B25900';
-const orangeLight = '#FFBF00';
-
-const green = ''; // link color
-const greenLight = '#85b200'; // Icon Color
-
-const white = 'rgb(51, 51, 51)';
-
-////  SVG Gradients
-const greenSvgGradient = 'url(#sidebar_svg_gradient_regular_green_mobile';
-const orangeSvgGradient = 'url(#svg_status_idle';
-
 const PDA_API_KEY = '###PDA-APIKEY###';
 function isPDA() {
   const PDATestRegex = !/^(###).+(###)$/.test(PDA_API_KEY);
-  console.log('IS PDA', PDATestRegex); // TEST
 
   return PDATestRegex;
 }
@@ -80,16 +63,12 @@ const orangeSvgGradient = 'url(#svg_status_idle';
 ////  Utils Functions
 
 function createTimestampsArray(data) {
-  console.log('CREATE TIMESTAMPS'); // TEST
   let timestamps = [];
 
-  console.log('ts-data.log', data.log); // TEST
   for (const entry in data.log) {
     timestamps.push(data.log[entry].timestamp);
-    // console.log('entry', entry); // TEST
   }
 
-  console.log('ts', timestamps); // TEST
   return timestamps;
 }
 
@@ -98,7 +77,6 @@ function calcTenHours(hours) {
 }
 
 function calcPenaltyScore(timestampsArray) {
-  console.log('CALC PS'); // TEST
   const currentTime = Date.now() / 1000;
 
   let score = 0;
@@ -111,12 +89,11 @@ function calcPenaltyScore(timestampsArray) {
       score += localScore;
     }
   }
-  console.log('ps', Math.floor(score)); // TEST
   return Math.floor(score);
 }
 
 function calcPenaltyThreshold(timestampsArray) {
-  console.log('CALC PT'); // TEST
+  if (getUserSettings().customPenaltyThreshold && typeof getUserSettings().customPenaltyThreshold === 'number') return getUserSettings().customPenaltyThreshold;
   const period = 24 * 60 * 60 * 3;
   let longestSequence = 0;
   let currentSequence = 1;
@@ -154,7 +131,6 @@ function calcPenaltyThreshold(timestampsArray) {
     }
     currentMaxScore = Math.max(currentMaxScore, score);
   }
-  console.log('pt', Math.floor(currentMaxScore)); // TEST
   return Math.floor(currentMaxScore);
 }
 
@@ -164,15 +140,12 @@ function calcAvailableBusts(penaltyScore, penaltyThreshold) {
 
 async function fetchBustsData(apiKey) {
   try {
-    console.log('FETCH BUST DATA'); // TEST
     const url = `https://api.torn.com/user/?selections=log&log=5360&key=${apiKey}`;
 
     const response = await fetch(url);
     const data = await response.json();
     setLastFecthTimestampMs();
 
-    console.log('res', response); // TEST
-    console.log('data', data); // TEST
     if (data.error) {
       if (data.error.error === 'Incorrect key' || data.error.error === 'Access level of this key is not high enough') {
         throw new Error(`Error: ${data.error.error}`);
@@ -181,7 +154,7 @@ async function fetchBustsData(apiKey) {
     }
     return data;
   } catch (err) {
-    console.error(err); // TEST
+    console.error(err);
   }
 }
 
@@ -214,8 +187,6 @@ function submitFormCallback() {
 function inputValidatorCallback(event) {
   const inputEl = document.querySelector('#bustr-form__input');
   const submitBtnEl = document.querySelector('#bustr-form__submit');
-  console.log('value', inputEl.value); // TEST
-  console.log('length', inputEl.value.length); // TEST
   if (event.target.value.length === 16) {
     submitBtnEl.disabled = false;
     inputEl.style.border = '1px solid #444';
@@ -255,19 +226,16 @@ function inputValidatorCallback(event) {
 async function successfulBustMutationCallback(mutationList, observer) {
   try {
     for (const mutation of mutationList) {
-      console.log('MUTATION OBSERVER'); // TEST
       if (!mutation.target.innerText) return;
       if (mutation.target.innerText.match(/^(You busted ).+/) && mutation.removedNodes.length > 0) {
-        console.log('💪🏾', mutation); // TEST
         observer.disconnect();
-        console.log('successful bust! Timestamp: ', Date.now()); // TEST
         addOneTimestampsArray(Math.floor(Date.now() / 1000));
         await loadController();
         successfulBustUpdateController();
       }
     }
   } catch (err) {
-    console.error(err); // TEST
+    console.error(err);
   }
 }
 // function createMiniProfileMutationObserver() {
@@ -283,7 +251,6 @@ async function successfulBustMutationCallback(mutationList, observer) {
 // }
 
 function createJailMutationObserver() {
-  console.log('CREATE JAIL MUTATION OBSERVER'); // TEST
   const jailObserver = new MutationObserver(successfulBustMutationCallback);
   jailObserver.observe(document, {
     attributes: false,
@@ -298,7 +265,6 @@ function setGlobalBustrState(newState) {
   GLOBAL_BUSTR_STATE = { ...GLOBAL_BUSTR_STATE, ...newState };
   localStorage.setItem('globalBustrState', JSON.stringify(GLOBAL_BUSTR_STATE));
   saveGlobalBustrState();
-  console.log('STATE!!! ', GLOBAL_BUSTR_STATE); // TEST
 }
 function getGlobalBustrState() {
   return GLOBAL_BUSTR_STATE;
@@ -314,7 +280,6 @@ function saveGlobalBustrState() {
 }
 function deleteGlobalBustrState() {
   GLOBAL_BUSTR_STATE = {
-
     userSettings: {
       reminderLimits: {
         redLimit: 0,
@@ -331,7 +296,6 @@ function deleteGlobalBustrState() {
 
 function getMyViewportWidthType() {
   let width = visualViewport.width;
-  console.log('GET MY DEVICE', width); // TEST
 
   if (width > 1000) return 'Desktop';
   if (width < 1000 || width) return 'Mobile';
@@ -339,13 +303,11 @@ function getMyViewportWidthType() {
 }
 
 function setApiKey(apiKey) {
-  console.log('SET API KEY', apiKey); // TEST
   localStorage.setItem('bustrApiKey', JSON.stringify(apiKey));
 }
 function getApiKey() {
-  console.log('GET API KEY'); // TEST
-
   if (isPDA()) return PDA_API_KEY;
+
   if (!localStorage.getItem('bustrApiKey')) return;
 
   return JSON.parse(localStorage.getItem('bustrApiKey'));
@@ -362,7 +324,6 @@ function setUserSettings(newUserSettings, currentState) {
   setGlobalBustrState(newState);
 }
 function getUserSettings() {
-  console.log('GET USER SETTINGS'); // TEST
   return getGlobalBustrState().userSettings;
 }
 
@@ -388,7 +349,6 @@ function addOneTimestampsArray(timestamp, currentState) {
   currentState = currentState || getGlobalBustrState();
 
   const newTimestampsArr = [timestamp, ...currentState.timestampsArray];
-  console.log('old TSA: ', currentState.timestampsArray.length, 'new TSA: ', newTimestampsArr.length, newTimestampsArr); // TEST
   setTimestampsArray(newTimestampsArr);
 }
 function getTimestampsArray() {
@@ -680,35 +640,32 @@ const bustrStylesheetHTML = `<style>
   }
     </style>`;
 function renderBustrStylesheet() {
-  console.log('RENDER STYLESHEET'); // TEST
-
   const headEl = document.querySelector('head');
   headEl.insertAdjacentHTML('beforeend', bustrStylesheetHTML);
 }
 
 function renderBustrColorClass(availableBusts) {
-  console.log('RENDER BUSTER COLOR'); // TEST
-  console.log('userSettings', getUserSettings()); // TEST
+  const navJailEl = document.querySelector('#nav-jail');
 
-  const navJailParentEl = document.querySelector('#nav-jail').parentElement;
+  const redLimit = typeof getUserSettings().reminderLimits.redLimit === 'number' ? getUserSettings().reminderLimits.redLimit : 0;
+  const greenLimit = typeof getUserSettings().reminderLimits.greenLimit === 'number' ? getUserSettings().reminderLimits.greenLimit : 3;
 
-  if (+availableBusts <= getUserSettings().reminderLimits.redLimit) {
+  if (+availableBusts <= redLimit) {
     document.body.classList.add('bustr--red');
     return;
   }
 
-  if (+availableBusts >= getUserSettings().reminderLimits.greenLimit) {
+  if (+availableBusts >= greenLimit) {
     document.body.classList.add('available___ZS04X', 'bustr--green');
     return;
   }
 
-  if (availableBusts > getUserSettings().reminderLimits.redLimit && availableBusts < getUserSettings().reminderLimits.greenLimit) {
+  if (availableBusts > redLimit && availableBusts < greenLimit) {
     document.body.classList.add('bustr--orange');
   }
 }
 //// Init form view
 function renderBustrForm() {
-  console.log('RENDER BUSTR FORM'); // TEST
   const topHeaderBannerEl = document.querySelector('#topHeaderBanner');
   const bustrFormHTML = `
       <div id="bustr-form" class="header-wrapper-top">
@@ -731,7 +688,6 @@ function dismountBustrForm() {
 }
 
 function renderBustrSettingsTabs() {
-  console.log('RENDER SETTINGS TABS'); // TEST
   const sideMenuTabsElArr = [...document.querySelectorAll('#prefs-tab-menu .headers li')];
   const dropdownCategoriesBtn = document.querySelector('#categories-button');
   const dropdownMenuListEl = document.querySelector('ul.ui-selectmenu-menu-dropdown');
@@ -754,7 +710,6 @@ function renderBustrSettingsTabs() {
 
   dropdownMenuListEl.insertAdjacentHTML('afterbegin', bustrSettingsDropdownTabHTML);
   dropdownCategoriesBtn.addEventListener('click', () => {
-    console.log('👶🏻', dropdownMenuListEl.children); // TEST
     const busterDropdownIsChild = [...dropdownMenuListEl.children].filter((child) => child.id === 'bustr-settings-dropdown');
     if (!busterDropdownIsChild) {
       dropdownMenuListEl.insertAdjacentHTML('afterbegin', bustrSettingsDropdownTabHTML);
@@ -891,60 +846,7 @@ function renderBustrSettingsForm() {
       </div>`;
 
   sideMenuTabsListEl.insertAdjacentHTML('afterend', bustrSettingsFormHTML);
-=======
-    navJailParentEl.classList.add('bustr--red');
-    return;
-  }
-
-  if (+availableBusts >= getUserSettings().reminderLimits.greenLimit) {
-    navJailParentEl.classList.add('available___ZS04X', 'bustr--green');
-    return;
-  }
-
-  if (
-    availableBusts > getUserSettings().reminderLimits.redLimit &&
-    availableBusts < reminderLimits.greenLimit
-  ) {
-    navJailParentEl.classList.add('bustr--orange');
-  }
 }
-//// Init form view
-function renderBustrForm() {
-  console.log('RENDER BUSTR FORM'); // TEST
-  const topHeaderBannerEl = document.querySelector('#topHeaderBanner');
-  const bustrFormHTML = `
-      <div id="bustr-form" class="header-wrapper-top">
-        <div class="container clear-fix">
-          <h2>Bustr API</h2>
-          <input
-            id="bustr-form__input"
-            type="text"
-            placeholder="Enter a full-acces API key..."
-          />
-          <a href="#" id="bustr-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
-        </div>
-      </div>`;
-
-  topHeaderBannerEl.insertAdjacentHTML('afterbegin', bustrFormHTML);
-}
-
-// function renderJailIcon() {
-//   console.log('REPLACE JAIL ICON'); // TEST
-//   const fill = 'url(#sidebar_svg_gradient_regular_green_mobile';
-
-//   const jailIconEl = document.querySelector('#nav-jail svg');
-//   const jailIconContainerEl =
-//     document.querySelector('#nav-jail svg').parentElement;
-
-//   const greenJailHTML = `
-//       <svg xmlns="http://www.w3.org/2000/svg" class="default___XXAGt " filter fill="${fill}" stroke="transparent" stroke-width="0" width="17" height="17" viewBox="0 1 17 17">
-//         <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z" filter="url(#svg_sidebar_mobile)"></path>
-//         <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z"></path>
-//       </svg>`;
-
-//   jailIconEl.remove();
-//   jailIconContainerEl.insertAdjacentHTML('afterbegin', greenJailHTML);
-// }
 
 // function renderJailIcon() {
 //   console.log('REPLACE JAIL ICON'); // TEST
@@ -973,8 +875,6 @@ function renderBustrStats(statsObj) {
 
 //// Desktop view
 function renderBustrDesktopView() {
-  console.log('RENDER DESKTOP STATS'); // TEST
-
   const jailLinkEl = document.querySelector('#nav-jail a');
   const statsHTML = `
       <span class="amount___p8QZX bustr-stats">
@@ -986,9 +886,7 @@ function renderBustrDesktopView() {
 
 //// Mobile view
 function renderMobileBustrNotification() {
-  console.log('RENDER MOBILE NOTIFICATION'); // TEST
   const navJailLinkEl = document.querySelector('#nav-jail a');
-  console.log('NAVJAILLINKEL', navJailLinkEl); // TEST
   const notificationHTML = `
   <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
 
@@ -996,7 +894,6 @@ function renderMobileBustrNotification() {
 }
 
 function renderBustrMobileView() {
-  console.log('RENDER MOBILE VIEW'); // TEST
   renderMobileBustrNotification();
 
   const bustrContextMenuHTML = `
@@ -1014,17 +911,12 @@ function renderBustrMobileView() {
 ////////  CONTROLLERS  ////////
 async function initController() {
   try {
-    console.log('🙌 INIT CONTROLLER'); // TEST
-
     // render stylesheet
     renderBustrStylesheet();
 
     // check if apiKey is saved
     // if saved exit function
-    console.log('PDA API KEY', PDA_API_KEY); // TEST
-    console.log('IS API KEY FALSE', !getApiKey()); // TEST
     if (isPDA() && !getApiKey()) {
-      console.log('🤓 SETTING PDA API KEY'); // TEST
       setApiKey(PDA_API_KEY);
     }
 
@@ -1058,7 +950,7 @@ async function initController() {
       }
     });
   } catch (err) {
-    console.error(err); // TEST
+    console.error(err);
   }
 }
 
@@ -1066,7 +958,6 @@ async function initController() {
 async function loadController() {
   try {
     // guard clause if no api key
-    console.log('LOAD GUARD'); // TEST
     if (!getApiKey()) return;
 
     if (loadGlobalBustrState()) {
@@ -1074,8 +965,8 @@ async function loadController() {
     }
 
     // fetch data
-    if (getTimestampsArray().length === 0 || Date.now() - getLastFecthTimestampMs() > 1000 * 60 * 10 || !getLastFecthTimestampMs()) {
-      console.log('fetching data'); // TEST
+    const refetchRate = typeof getUserSettings().refetchRate === 'number' && getUserSettings().refetchRate > 0 ? getUserSettings().refetchRate : 600;
+    if (getTimestampsArray().length === 0 || Date.now() - getLastFecthTimestampMs() > 1000 * refetchRate || !getLastFecthTimestampMs()) {
       const data = await fetchBustsData(getApiKey());
       setTimestampsArray(createTimestampsArray(data));
     }
@@ -1092,13 +983,12 @@ async function loadController() {
     renderBustrStats(statsObj);
   } catch (err) {
     // deleteApiKey();
-    console.error(err); // TEST
+    console.error(err);
   }
 }
 
 function successfulBustUpdateController() {
   // update after a successful bust
-  console.log('AUTO UPDATE CONTROLLER'); // TEST
   const origin = window.location.origin;
   const pathname = window.location.pathname;
 
@@ -1108,9 +998,10 @@ function successfulBustUpdateController() {
 }
 
 function refreshStatsController() {
+  const statsRefreshRate = typeof getUserSettings().statsRefreshRate === 'number' && getUserSettings().statsRefreshRate > 0 ? getUserSettings().statsRefreshRate : 30;
   setInterval(async () => {
     await loadController();
-  }, 30000);
+  }, statsRefreshRate * 1000 || 30000);
 }
 
 function viewportResizeController() {
@@ -1137,7 +1028,6 @@ function renderHardnessJailView() {
     <span class="hardness title-divider divider-spiky">Hardness</span>`;
   if (!headingsContainerEl.querySelector('span.hardness')) {
     headingsContainerEl.children[3].insertAdjacentHTML('afterend', hardnessTitleHTML);
-
   }
 
   const playerRowsArr = [...document.querySelectorAll('.user-info-list-wrap > li')];
@@ -1196,7 +1086,6 @@ function createMountJailPlayerOberserver() {
 
 function hardnessScoreController() {
   if (window.location.pathname !== '/jailview.php') return;
-  console.log('HARDNESSSCORECONTROLLER'); // TEST
   createMountJailPlayerOberserver();
 
   renderHardnessJailView();
@@ -1221,22 +1110,12 @@ const browserPromise = new Promise((res, rej) => {
   window.addEventListener('load', () => res());
 });
 
-// await new Promise((res) => {
-//   const interval = setInterval(() => {
-//     if (document.readyState === 'complete') {
-//       res();
-//       clearInterval(interval);
-//     }
-//   });
-// });
-
 (async function () {
   try {
-    console.log(document.readyState); // TEST
     await Promise.race([PDAPromise, browserPromise]);
     initController();
     await loadController();
-    userSettingsController();
+    // userSettingsController();
     if (getUserSettings().showHardnessScore) {
       hardnessScoreController();
     }
@@ -1244,6 +1123,6 @@ const browserPromise = new Promise((res, rej) => {
     refreshStatsController();
     viewportResizeController();
   } catch (err) {
-    console.error(err); // TEST
+    console.error(err);
   }
 })();
