@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.1
+// @version      1.0.3
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -17,15 +17,15 @@ console.log('😎 BUSTR-SCRIPT ON!!!!'); // TEST
 let GLOBAL_BUSTR_STATE = {
   userSettings: {
     reminderLimits: {
-      redLimit: 0,
-      greenLimit: 3,
+      redLimit: 0, // will be red at this number and under
+      greenLimit: 3, // will be green at this number and over
     },
-    statsRefreshRate: 30,
-    refetchRate: 600,
-    customPenaltyThreshold: 0,
+    statsRefreshRate: 30, // time in seconds
+    refetchRate: 600, // time in sections
+    customPenaltyThreshold: 0, // leave at 0 if you want to use the prediction algorithm
     // quickBust: true,
     // quickBail: false,
-    showHardnessScore: true,
+    showHardnessScore: true, // set to 'false' to remove hardnessScore rendering and reordering
   },
   penaltyScore: 0,
   penaltyThreshold: 0,
@@ -51,7 +51,7 @@ const redLight = 'rgb(255, 168, 168)';
 const orange = '#d08000';
 const orangeLight = '#FFBF00';
 
-const green = ''; // link color
+const green = '#85b200'; // link color
 const greenLight = '#85b200'; // Icon Color
 
 const white = 'rgb(51, 51, 51)';
@@ -225,7 +225,6 @@ async function successfulBustMutationCallback(mutationList, observer) {
     for (const mutation of mutationList) {
       if (!mutation.target.innerText) return;
       if (mutation.target.innerText.match(/^(You busted ).+/) && mutation.removedNodes.length > 0) {
-        console.log('👀 You busted...', mutation); // TEST
         observer.disconnect();
         addOneTimestampsArray(Math.floor(Date.now() / 1000));
         await loadController();
