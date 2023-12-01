@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn War Highlighter - offline/idle & okay
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.1.0
+// @version      1.1.1
 // @description  Provide customizable sexy highlighting of war enemies in green, orange and red.
 // @author       Ironhydedragon
 // @match        https://www.torn.com/factions*
@@ -89,7 +89,7 @@ const stylesheetHTML = `
     }
     
     .wh-bg--orange {
-      --wh-bg-color: ${orangeFulvousTranslucent};
+      --wh-bg-color: ${orangeAmberTranslucent};
       --wh-outline-fb: 1px solid ${orangeFulvous}
     }
     .dark-mode .wh-bg--orange {
