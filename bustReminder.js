@@ -1,13 +1,12 @@
-/** @format */
-
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.3
+// @version      1.0.4
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
 // @license      MIT
+// @run-at       document-end
 // ==/UserScript==
 
 console.log('😎 BUSTR-SCRIPT ON!!!!'); // TEST
@@ -20,8 +19,7 @@ let GLOBAL_BUSTR_STATE = {
       redLimit: 0, // will be red at this number and under
       greenLimit: 3, // will be green at this number and over
     },
-    statsRefreshRate: 30, // time in seconds
-    refetchRate: 600, // time in sections
+    statsRefreshRate: 15, // time in seconds
     customPenaltyThreshold: 0, // leave at 0 if you want to use the prediction algorithm
     // quickBust: true,
     // quickBail: false,
@@ -43,22 +41,22 @@ function isPDA() {
 }
 
 ////  Colors
-const red = '#E54C19';
-const redLight = 'rgb(255, 168, 168)';
+const greenMossDark = '#4b5738';
+const greenMossDarkTranslucent = 'rgb(75, 87, 56, 0.9)';
+const greenMoss = '#57693a';
+const greenMossTranslucent = 'rgb(87, 105, 58, 0.9)';
+const greenApple = '#85b200';
+const greenAppleTranslucent = 'rgba(134, 179, 0, 0.4)';
 
-// const orange = '#B25900';
-// const orange = '#d98c00';
-const orange = '#d08000';
-const orangeLight = '#FFBF00';
+const orangeFulvous = '#d08000';
+const orangeFulvousTranslucent = 'rgba(209, 129, 0, 0.3)';
+const orangeAmber = '#ffbf00';
+const orangeAmberTranslucent = 'rgba(255, 191, 0, 0.4)';
 
-const green = '#85b200'; // link color
-const greenLight = '#85b200'; // Icon Color
-
-const white = 'rgb(51, 51, 51)';
-
-////  SVG Gradients
-const greenSvgGradient = 'url(#sidebar_svg_gradient_regular_green_mobile';
-const orangeSvgGradient = 'url(#svg_status_idle';
+const redFlame = '#e64d1a';
+const redFlameTranslucent = 'rgba(230, 77, 25, 0.3)';
+const redMelon = '#ffa8a8';
+const redMelonTranslucent = 'rgba(255, 168, 168, 0.3)';
 
 ////  Utils Functions
 
@@ -407,28 +405,25 @@ function getAvailableBusts() {
 ////  Stylesheet
 const bustrStylesheetHTML = `<style>
   .bustr--green {
-    --color: ${green}
+    --color: ${greenMoss}
   }
   .bustr--orange {
-    --color: ${orange}
+    --color: ${orangeFulvous}
   }
   .bustr--red {
-    --color: ${red}
+    --color: ${redFlame}
   }
   .dark-mode.bustr--green,
   .bustr--green .swiper-slide {
-    --color: ${greenLight}
+    --color: ${greenMoss}
   }
   .dark-mode.bustr--orange,
   .bustr--orange .swiper-slide {
-    --color: ${orangeLight}
+    --color: ${orangeAmber}
   }
   .dark-mode.bustr--red,
   .bustr--red .swiper-slide {
-    --color: ${redLight}
-  }
-  .bg-gradient--green{
-    --gradient-green: linear-gradient(to bottom, rgba(143, 113, 113, 1) 0, rgba(92, 62, 62, 1) 100%);
+    --color: ${redMelon}
   }
 
   #bustr-form.header-wrapper-top {
@@ -486,6 +481,7 @@ const bustrStylesheetHTML = `<style>
     left: unset;
     right: -92px;
     padding: 0 8px;
+    z-index: 9999;
   }
   .contextMenuActive___e6i_B #bustr-context.contextMenu___bjhoL {
     display: flex;
@@ -692,185 +688,6 @@ function dismountBustrForm() {
   document.querySelector('#bustr-form').remove();
 }
 
-function renderBustrSettingsTabs() {
-  const sideMenuTabsElArr = [...document.querySelectorAll('#prefs-tab-menu .headers li')];
-  const dropdownCategoriesBtn = document.querySelector('#categories-button');
-  const dropdownMenuListEl = document.querySelector('ul.ui-selectmenu-menu-dropdown');
-  const prefsTitle = document.querySelector('.prefs-tab-title');
-  const prefsContentArr = [...document.querySelectorAll('.prefs-cont')];
-
-  const bustrSettingsSideTabHTML = `
-    <li class="delimiter"></li>
-    <li id="bustr-settings-sidetab" class="c-pointer ui-state-default ui-corner-top ui-tabs-active" data-title-name="Change your general settings" role="tab" tabindex="0" aria-controls="settings" aria-labelledby="ui-id-2" aria-selected="true">
-      <a class="t-gray-6 bold h settings ui-tabs-anchor" href="#settings" role="presentation" tabindex="-1" id="bustr-settings-sidetab__link" i-data="i_192_87_149_34">Bustr settings</a>
-    </li>
-    `;
-
-  const bustrSettingsDropdownTabHTML = `
-  <li role="presentation" id='bustr-settings-dropdown'>
-    <a href="#nogo" tabindex="-1" role="option" aria-selected="false" id="bustr-dropdown__select">Bustr settings</a>
-  </li>`;
-
-  sideMenuTabsElArr[6].insertAdjacentHTML('afterend', bustrSettingsSideTabHTML);
-
-  dropdownMenuListEl.insertAdjacentHTML('afterbegin', bustrSettingsDropdownTabHTML);
-  dropdownCategoriesBtn.addEventListener('click', () => {
-    const busterDropdownIsChild = [...dropdownMenuListEl.children].filter((child) => child.id === 'bustr-settings-dropdown');
-    if (!busterDropdownIsChild) {
-      dropdownMenuListEl.insertAdjacentHTML('afterbegin', bustrSettingsDropdownTabHTML);
-    }
-  });
-
-  const dropdownMenuItemsArr = [...dropdownMenuListEl.querySelectorAll('li')];
-  // listeners for dropdown li click
-  dropdownMenuItemsArr.forEach((li, i, arr) => {
-    li.addEventListener('click', (e) => {
-      if (li.id === 'bustr-settings-dropdown') {
-        prefsContentArr.forEach((el) => {
-          if (el.id !== 'bustr-settings') el.style.display = 'none';
-        });
-        document.querySelector('#bustr-settings').style.display = 'block';
-        arr.forEach((li) => li.classList.remove(''));
-        dropdownCategoriesBtn.textContent = 'Bustr settings';
-        prefsTitle.textContent = 'Change your bust reminder settings';
-      }
-      if (li.id !== 'bustr-settings-dropdown') {
-        document.querySelector('#bustr-settings').classList.remove('active');
-        document.querySelector('#bustr-settings').style.display = 'none';
-      }
-    });
-    sideMenuTabsElArr.forEach((li, i, arr) => {
-      li.addEventListener('click', (e) => {
-        if (li.id === 'bustr-settings-sidetab') {
-          prefsContentArr.forEach((el) => {
-            if (el.id !== 'bustr-settings') el.style.display = 'none';
-          });
-          document.querySelector('#bustr-settings').style.display = 'block';
-          arr.forEach((li) => li.classList.remove(''));
-          dropdownCategoriesBtn.textContent = 'Bustr settings';
-          prefsTitle.textContent = 'Change your bust reminder settings';
-        }
-        if (li.id !== 'bustr-settings-sidetab') {
-          document.querySelector('#bustr-settings').classList.remove('active');
-          document.querySelector('#bustr-settings').style.display = 'none';
-        }
-      });
-    });
-  });
-  // if, #bustr-settings-dropdown
-  // then, set other forms to display none, add active class to bustr form, set categores button innerText to bustr settings
-  // if, not #bustr-settings-dropdown
-  // then, remove active class from form
-}
-
-function renderBustrSettingsForm() {
-  const prefsTabTitleEl = document.querySelector('.prefs-tab-title');
-  prefsTabTitleEl.textContent = 'Change your bust reminder settings';
-
-  const sideMenuTabsListEl = document.querySelector('#prefs-tab-menu .headers');
-  // show tabs class : ui-tabs-active
-  // active tab class : ui-state-active
-
-  bustrSettingsFormHTML = `
-    <div id="bustr-settings" class="prefs-cont left ui-tabs-panel ui-widget-content ui-corner-bottom" aria-labelledby="ui-id-3" role="tabpanel" aria-expanded="true" aria-hidden="false">
-        <div class="inner-block b-border-c t-border-f">
-          <ul class="prefs-list small-select-menu-wrap">
-            <li>
-              <p class="m-bottom5">Custom Penalty Threshold:</p>
-              <input type="number" name="customThreshold" id="bustr-custom-threshold" size="5" value="0" min="0" />
-            </li>
-          </ul>
-        </div>
-        <div class="inner-block b-border-c t-border-f">
-          <ul class="prefs-list small-select-menu-wrap">
-            <li>
-              <p class="m-bottom5">Custom Penalty Threshold:</p>
-              <input type="number" name="customThreshold" id="bustr-custom-threshold" size="5" value="0" min="0" />
-            </li>
-          </ul>
-        </div>
-        <div class="inner-block b-border-c t-border-f">
-          <ul class="prefs-list attack-pref-block small-select-menu-wrap">
-            <li role="radiogroup">
-              <div class="title left">Quick Bust</div>
-              <div class="choice-container left-position">
-                <input id="quick-bust-on" class="radio-css" type="radio" name="quick-bust" value="true" checked="checked" />
-                <label for="quick-bust-on" class="marker-css">On</label>
-              </div>
-              <div class="choice-container right-position">
-                <input id="quick-bust-off" class="radio-css" type="radio" name="quick-bust" value="false" />
-                <label for="quick-bust-off" class="marker-css">Off</label>
-              </div>
-              <div class="clear"></div>
-            </li>
-            <li role="radiogroup">
-              <div class="title left">Quick Bail</div>
-              <div class="choice-container left-position">
-                <input id="quick-bail-on" class="radio-css" type="radio" name="quick-bail" value="true" checked="checked" />
-                <label for="quick-bail-on" class="marker-css">On</label>
-              </div>
-              <div class="choice-container right-position">
-                <input id="quick-bail-off" class="radio-css" type="radio" name="quick-bail" value="false" />
-                <label for="quick-bail-off" class="marker-css">Off</label>
-              </div>
-              <div class="clear"></div>
-            </li>
-          </ul>
-        </div>
-        <div class="inner-block b-border-c t-border-f">
-          <ul class="prefs-list small-select-menu-wrap">
-            <li>
-              <p class="m-bottom5">Red Limit:</p>
-              <input type="number" name="redLimit" id="bustr-red-input" size="5" value="0" min="0" />
-            </li>
-            <li>
-              <p class="m-top10 m-bottom5">Green Limit:</p>
-              <input id="bustr-green-input" type="number" name="Red Limit" value="3" size="5" />
-            </li>
-          </ul>
-        </div>
-        <div class="inner-block b-border-c t-border-f">
-          <ul class="prefs-list small-select-menu-wrap">
-            <li>
-              <p class="m-top10 m-bottom5">Stats Refresh Rate (seconds):</p>
-              <input type="number" name="city" id="bustr-refresh-input" size="5" value="30" />
-            </li>
-            <li>
-              <p class="m-top10 m-bottom5">API Refresh Rate (minutes):</p>
-              <input type="number" name="API Refetch Rate" id="bustr-refetch-input" value="10" />
-            </li>
-          </ul>
-        </div>
-        <div class="inner-block t-border-f">
-          <div class="btn-wrap silver">
-            <div class="btn">
-              <input class="torn-btn update" type="submit" value="SAVE" id="bustr-save-btn" />
-            </div>
-          </div>
-        </div>
-      </div>`;
-
-  sideMenuTabsListEl.insertAdjacentHTML('afterend', bustrSettingsFormHTML);
-}
-
-// function renderJailIcon() {
-//   console.log('REPLACE JAIL ICON'); // TEST
-//   const fill = 'url(#sidebar_svg_gradient_regular_green_mobile';
-
-//   const jailIconEl = document.querySelector('#nav-jail svg');
-//   const jailIconContainerEl =
-//     document.querySelector('#nav-jail svg').parentElement;
-
-//   const greenJailHTML = `
-//       <svg xmlns="http://www.w3.org/2000/svg" class="default___XXAGt " filter fill="${fill}" stroke="transparent" stroke-width="0" width="17" height="17" viewBox="0 1 17 17">
-//         <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z" filter="url(#svg_sidebar_mobile)"></path>
-//         <path d="M11.56,1V18h2V1Zm-5,12.56h4v-2h-4ZM0,13.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5Zm-8-6h4v-2h-4ZM0,7.56H2.56v-2H0Zm14.56,0h2.5v-2h-2.5ZM3.56,1V18h2V1Z"></path>
-//       </svg>`;
-
-//   jailIconEl.remove();
-//   jailIconContainerEl.insertAdjacentHTML('afterbegin', greenJailHTML);
-// }
-
 function renderBustrStats(statsObj) {
   for (const [key, value] of Object.entries(statsObj)) {
     const statsElArr = [...document.querySelectorAll(`.bustr-stats__${key}`)];
@@ -929,27 +746,27 @@ function renderHardnessJailView() {
         <span class="title bold">HARDNESS</span>
         <span class="bustr-hardness-score">#####</span>
       </span>`;
-    playerInfoContainerEl.children[2].insertAdjacentHTML('afterend', hardnessScoreHTML);
+
+    if (!playerInfoContainerEl.querySelector('.hardness.reason')) {
+      playerInfoContainerEl.children[2].insertAdjacentHTML('afterend', hardnessScoreHTML);
+    }
   });
 }
 
 ////////  CONTROLLERS  ////////
 async function initController() {
   try {
-    // render stylesheet
     renderBustrStylesheet();
 
-    // check if apiKey is saved
-    // if saved exit function
     if (isPDA() && !getApiKey()) {
       setApiKey(PDA_API_KEY);
     }
 
-    if (!visualViewport.width) {
-      await new Promise((res) => {
-        document.addEventListener('load', () => res());
-      });
-    }
+    // if (!visualViewport.width) {
+    //   await new Promise((res) => {
+    //     document.addEventListener('load', () => res());
+    //   });
+    // }
 
     if (getMyViewportWidthType() === 'Desktop') {
       renderBustrDesktopView();
@@ -990,11 +807,12 @@ async function loadController() {
     }
 
     // fetch data
-    const refetchRate = typeof getUserSettings().refetchRate === 'number' && getUserSettings().refetchRate > 0 ? getUserSettings().refetchRate : 600;
-    if (getTimestampsArray().length === 0 || Date.now() - getLastFecthTimestampMs() > 1000 * refetchRate || !getLastFecthTimestampMs()) {
-      const data = await fetchBustsData(getApiKey());
-      setTimestampsArray(createTimestampsArray(data));
-    }
+    // const refetchRate = typeof getUserSettings().refetchRate === 'number' && getUserSettings().refetchRate > 0 ? getUserSettings().refetchRate : 600;
+    // console.log('refe', ); // TEST
+    // if (getTimestampsArray().length === 0 || Date.now() - getLastFecthTimestampMs() > 1000 * refetchRate || !getLastFecthTimestampMs()) {
+    const data = await fetchBustsData(getApiKey());
+    setTimestampsArray(createTimestampsArray(data));
+    // }
 
     const statsObj = calcBustrStats(getTimestampsArray());
     setPenaltyScore(statsObj.penaltyScore);
@@ -1013,10 +831,6 @@ async function loadController() {
 }
 
 function successfulBustUpdateController() {
-  // update after a successful bust
-  const origin = window.location.origin;
-  const pathname = window.location.pathname;
-
   createJailMutationObserver();
 }
 
@@ -1032,17 +846,12 @@ function viewportResizeController() {
     if (!getRenderedView()) return;
 
     const viewportWidthType = getMyViewportWidthType();
+    console.log('renderedView', getRenderedView(), 'viewportWidthType', viewportWidthType); // TEST
     if (viewportWidthType !== getRenderedView()) {
       initController();
       await loadController();
     }
   });
-}
-
-function userSettingsController() {
-  if (window.location.pathname !== '/preferences.php') return;
-  renderBustrSettingsTabs();
-  renderBustrSettingsForm();
 }
 
 function hardnessScoreController() {
@@ -1063,17 +872,17 @@ function hardnessScoreController() {
 //// Promise race conditions
 // necessary as PDA scripts are inject after window.onload
 
-const PDAPromise = new Promise((res, rej) => {
-  if (document.readyState === 'complete') res();
-});
+// const PDAPromise = new Promise((res, rej) => {
+//   if (document.readyState === 'complete') res();
+// });
 
-const browserPromise = new Promise((res, rej) => {
-  window.addEventListener('load', () => res());
-});
+// const browserPromise = new Promise((res, rej) => {
+//   window.addEventListener('load', () => res());
+// });
 
 (async function () {
   try {
-    await Promise.race([PDAPromise, browserPromise]);
+    // await Promise.race([PDAPromise, browserPromise]);
     initController();
     await loadController();
     // userSettingsController();
