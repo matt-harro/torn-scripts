@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.5
+// @version      1.0.6
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -703,6 +703,7 @@ function renderBustrDesktopView() {
         <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
       </span>`;
 
+  if (!jailLinkEl) return;
   jailLinkEl.insertAdjacentHTML('beforeend', statsHTML);
 }
 
@@ -712,6 +713,7 @@ function renderMobileBustrNotification() {
   const notificationHTML = `
   <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
 
+  if (!navJailLinkEl) return;
   navJailLinkEl.insertAdjacentHTML('beforebegin', notificationHTML);
 }
 
