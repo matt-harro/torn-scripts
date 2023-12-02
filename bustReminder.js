@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.4
+// @version      1.0.5
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -405,7 +405,7 @@ function getAvailableBusts() {
 ////  Stylesheet
 const bustrStylesheetHTML = `<style>
   .bustr--green {
-    --color: ${greenMoss}
+    --color: ${greenApple}
   }
   .bustr--orange {
     --color: ${orangeFulvous}
@@ -415,7 +415,7 @@ const bustrStylesheetHTML = `<style>
   }
   .dark-mode.bustr--green,
   .bustr--green .swiper-slide {
-    --color: ${greenMoss}
+    --color: ${greenApple}
   }
   .dark-mode.bustr--orange,
   .bustr--orange .swiper-slide {
@@ -747,6 +747,7 @@ function renderHardnessJailView() {
         <span class="bustr-hardness-score">#####</span>
       </span>`;
 
+    if (!playerInfoContainerEl) return;
     if (!playerInfoContainerEl.querySelector('.hardness.reason')) {
       playerInfoContainerEl.children[2].insertAdjacentHTML('afterend', hardnessScoreHTML);
     }
@@ -807,12 +808,8 @@ async function loadController() {
     }
 
     // fetch data
-    // const refetchRate = typeof getUserSettings().refetchRate === 'number' && getUserSettings().refetchRate > 0 ? getUserSettings().refetchRate : 600;
-    // console.log('refe', ); // TEST
-    // if (getTimestampsArray().length === 0 || Date.now() - getLastFecthTimestampMs() > 1000 * refetchRate || !getLastFecthTimestampMs()) {
     const data = await fetchBustsData(getApiKey());
     setTimestampsArray(createTimestampsArray(data));
-    // }
 
     const statsObj = calcBustrStats(getTimestampsArray());
     setPenaltyScore(statsObj.penaltyScore);
@@ -846,7 +843,6 @@ function viewportResizeController() {
     if (!getRenderedView()) return;
 
     const viewportWidthType = getMyViewportWidthType();
-    console.log('renderedView', getRenderedView(), 'viewportWidthType', viewportWidthType); // TEST
     if (viewportWidthType !== getRenderedView()) {
       initController();
       await loadController();
@@ -861,6 +857,7 @@ function hardnessScoreController() {
   renderHardnessJailView();
   const playersArr = [...document.querySelectorAll('ul.user-info-list-wrap > li')];
 
+  if (playersArr[0].classList.contains('last')) return;
   for (const playerEl of playersArr) {
     const [level, durationInHours] = getLevelJailDurationInfo(playerEl);
     const hardnessScore = calcHardnessScore(level, durationInHours);
@@ -871,21 +868,19 @@ function hardnessScoreController() {
 
 //// Promise race conditions
 // necessary as PDA scripts are inject after window.onload
+const PDAPromise = new Promise((res, rej) => {
+  if (document.readyState === 'complete') res();
+});
 
-// const PDAPromise = new Promise((res, rej) => {
-//   if (document.readyState === 'complete') res();
-// });
-
-// const browserPromise = new Promise((res, rej) => {
-//   window.addEventListener('load', () => res());
-// });
+const browserPromise = new Promise((res, rej) => {
+  window.addEventListener('load', () => res());
+});
 
 (async function () {
   try {
-    // await Promise.race([PDAPromise, browserPromise]);
+    await Promise.race([PDAPromise, browserPromise]);
     initController();
     await loadController();
-    // userSettingsController();
     if (getUserSettings().showHardnessScore) {
       hardnessScoreController();
     }
