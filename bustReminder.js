@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.5
+// @version      1.0.6
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -225,7 +225,6 @@ async function successfulBustMutationCallback(mutationList, observer) {
       if (mutation.target.innerText.match(/^(You busted ).+/) && mutation.removedNodes.length > 0) {
         observer.disconnect();
         console.log('SuccessfulBust', Date.now()); // TEST
-        // addOneTimestampsArray(Math.floor(Date.now() / 1000));
         await loadController();
         successfulBustUpdateController();
       }
@@ -252,7 +251,6 @@ function createJailMutationObserver() {
     childList: true,
     subtree: true,
   });
-  console.log('👀 Observing jail'); // TEST
 }
 
 function createHardnessScoreObserver() {
@@ -349,12 +347,6 @@ function setTimestampsArray(newTimestampsArr, currentState) {
     ...currentState,
     timestampsArray: newTimestampsArr,
   });
-}
-function addOneTimestampsArray(timestamp, currentState) {
-  currentState = currentState || getGlobalBustrState();
-
-  const newTimestampsArr = [timestamp, ...currentState.timestampsArray];
-  setTimestampsArray(newTimestampsArr);
 }
 function getTimestampsArray() {
   return getGlobalBustrState().timestampsArray;
@@ -705,7 +697,6 @@ async function requireElement(selectors) {
   try {
     await new Promise((res, rej) => {
       if (document.querySelector(selectors)) res();
-      console.log('require func'); // TEST
 
       maxCycles = 500;
       let current = 1;
@@ -722,7 +713,7 @@ async function requireElement(selectors) {
       }, 10);
     });
   } catch (err) {
-    console.error(err); // TEST
+    console.error(err);
   }
 }
 
@@ -771,7 +762,7 @@ async function renderBustrMobileView() {
 
     jailLinkEl.insertAdjacentHTML('afterend', bustrContextMenuHTML);
   } catch (err) {
-    console.err(err); // TEST
+    console.err(err);
   }
 }
 
@@ -808,7 +799,6 @@ async function initController() {
       setApiKey(PDA_API_KEY);
     }
 
-    console.log('vwt', getMyViewportWidthType()); // TEST
     if (getMyViewportWidthType() === 'Desktop') {
       await renderBustrDesktopView();
       setRenderedView('Desktop');
