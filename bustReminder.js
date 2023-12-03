@@ -224,7 +224,8 @@ async function successfulBustMutationCallback(mutationList, observer) {
       if (!mutation.target.innerText) return;
       if (mutation.target.innerText.match(/^(You busted ).+/) && mutation.removedNodes.length > 0) {
         observer.disconnect();
-        addOneTimestampsArray(Math.floor(Date.now() / 1000));
+        console.log('SuccessfulBust', Date.now()); // TEST
+        // addOneTimestampsArray(Math.floor(Date.now() / 1000));
         await loadController();
         successfulBustUpdateController();
       }
@@ -234,7 +235,7 @@ async function successfulBustMutationCallback(mutationList, observer) {
   }
 }
 
-function mountJailPlayerCallback(mutationList, observer) {
+function hardnessScoreCallback(mutationList, observer) {
   for (const mutation of mutationList) {
     if (mutation.target.classList.contains('user-info-list-wrap') && mutation.addedNodes.length > 1) {
       hardnessScoreController();
@@ -251,11 +252,12 @@ function createJailMutationObserver() {
     childList: true,
     subtree: true,
   });
+  console.log('👀 Observing jail'); // TEST
 }
 
-function createMountJailPlayerOberserver() {
-  const mountJailPlayerObserver = new MutationObserver(mountJailPlayerCallback);
-  mountJailPlayerObserver.observe(document, {
+function createHardnessScoreObserver() {
+  const harnessScoreObserver = new MutationObserver(hardnessScoreCallback);
+  harnessScoreObserver.observe(document, {
     attributes: false,
     childList: true,
     subtree: true,
@@ -646,23 +648,27 @@ function renderBustrStylesheet() {
 }
 
 function renderBustrColorClass(availableBusts) {
-  const navJailEl = document.querySelector('#nav-jail');
-
   const redLimit = typeof getUserSettings().reminderLimits.redLimit === 'number' ? getUserSettings().reminderLimits.redLimit : 0;
   const greenLimit = typeof getUserSettings().reminderLimits.greenLimit === 'number' ? getUserSettings().reminderLimits.greenLimit : 3;
 
   if (+availableBusts <= redLimit) {
+    if (document.body.classList.contains('bustr--red')) return;
     document.body.classList.add('bustr--red');
+    document.body.classList.remove('available___ZS04X', 'bustr--green', 'bustr--orange');
     return;
   }
 
   if (+availableBusts >= greenLimit) {
+    if (document.body.classList.contains('bustr--green')) return;
     document.body.classList.add('available___ZS04X', 'bustr--green');
+    document.body.classList.remove('bustr--orange', 'bustr--red');
     return;
   }
 
   if (availableBusts > redLimit && availableBusts < greenLimit) {
+    if (document.body.classList.contains('bustr--orange')) return;
     document.body.classList.add('bustr--orange');
+    document.body.classList.remove('available___ZS04X', 'bustr--green', 'bustr--red');
   }
 }
 //// Init form view
@@ -695,30 +701,67 @@ function renderBustrStats(statsObj) {
   }
 }
 
-//// Desktop view
-function renderBustrDesktopView() {
-  const jailLinkEl = document.querySelector('#nav-jail a');
-  const statsHTML = `
-      <span class="amount___p8QZX bustr-stats">
-        <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
-      </span>`;
+async function requireElement(selectors) {
+  try {
+    await new Promise((res, rej) => {
+      if (document.querySelector(selectors)) res();
+      console.log('require func'); // TEST
 
-  jailLinkEl.insertAdjacentHTML('beforeend', statsHTML);
+      maxCycles = 500;
+      let current = 1;
+      const interval = setInterval(() => {
+        if (document.querySelector(selectors)) {
+          clearInterval(interval);
+          res();
+        }
+        if (current === maxCycles) {
+          clearInterval(interval);
+          rej('Timeout: Could not find jail link');
+        }
+        current++;
+      }, 10);
+    });
+  } catch (err) {
+    console.error(err); // TEST
+  }
+}
+
+//// Desktop view
+async function renderBustrDesktopView() {
+  try {
+    await requireElement('#nav-jail a');
+    const jailLinkEl = document.querySelector('#nav-jail a');
+    if (jailLinkEl.querySelector('.bustr-stats')) return;
+
+    const statsHTML = `
+        <span class="amount___p8QZX bustr-stats">
+          <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
+        </span>`;
+
+    jailLinkEl.insertAdjacentHTML('beforeend', statsHTML);
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 //// Mobile view
 function renderMobileBustrNotification() {
-  const navJailLinkEl = document.querySelector('#nav-jail a');
-  const notificationHTML = `
-  <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
+  const jailLinkEl = document.querySelector('#nav-jail a');
 
-  navJailLinkEl.insertAdjacentHTML('beforebegin', notificationHTML);
+  const notificationHTML = `
+    <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
+  jailLinkEl.insertAdjacentHTML('beforebegin', notificationHTML);
 }
 
-function renderBustrMobileView() {
-  renderMobileBustrNotification();
+async function renderBustrMobileView() {
+  try {
+    await requireElement('#nav-jail a');
+    const jailLinkEl = document.querySelector('#nav-jail');
+    if (jailLinkEl.querySelector('.bustr-stats')) return;
 
-  const bustrContextMenuHTML = `
+    renderMobileBustrNotification();
+
+    const bustrContextMenuHTML = `
       <div id="bustr-context" class='contextMenu___bjhoL bustr-context-menu'>
         <span class='linkName___FoKha bustr-stats'>
         <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
@@ -726,8 +769,10 @@ function renderBustrMobileView() {
         <span class='arrow___tKP13 bustr-arrow'></span>
       </div>`;
 
-  const navJailEl = document.querySelector('#nav-jail');
-  navJailEl.insertAdjacentHTML('afterend', bustrContextMenuHTML);
+    jailLinkEl.insertAdjacentHTML('afterend', bustrContextMenuHTML);
+  } catch (err) {
+    console.err(err); // TEST
+  }
 }
 
 function renderHardnessJailView() {
@@ -763,18 +808,13 @@ async function initController() {
       setApiKey(PDA_API_KEY);
     }
 
-    // if (!visualViewport.width) {
-    //   await new Promise((res) => {
-    //     document.addEventListener('load', () => res());
-    //   });
-    // }
-
+    console.log('vwt', getMyViewportWidthType()); // TEST
     if (getMyViewportWidthType() === 'Desktop') {
-      renderBustrDesktopView();
+      await renderBustrDesktopView();
       setRenderedView('Desktop');
     }
     if (getMyViewportWidthType() === 'Mobile') {
-      renderBustrMobileView();
+      await renderBustrMobileView();
       setRenderedView('Mobile');
     }
 
@@ -852,7 +892,7 @@ function viewportResizeController() {
 
 function hardnessScoreController() {
   if (window.location.pathname !== '/jailview.php') return;
-  createMountJailPlayerOberserver();
+  createHardnessScoreObserver();
 
   renderHardnessJailView();
   const playersArr = [...document.querySelectorAll('ul.user-info-list-wrap > li')];
@@ -879,7 +919,7 @@ const browserPromise = new Promise((res, rej) => {
 (async function () {
   try {
     await Promise.race([PDAPromise, browserPromise]);
-    initController();
+    await initController();
     await loadController();
     if (getUserSettings().showHardnessScore) {
       hardnessScoreController();
