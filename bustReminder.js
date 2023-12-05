@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.6
+// @version      1.0.8
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -19,7 +19,7 @@ let GLOBAL_BUSTR_STATE = {
       redLimit: 0, // will be red at this number and under
       greenLimit: 3, // will be green at this number and over
     },
-    statsRefreshRate: 15, // time in seconds
+    statsRefreshRate: 60, // time in seconds
     customPenaltyThreshold: 0, // leave at 0 if you want to use the prediction algorithm
     // quickBust: true,
     // quickBail: false,
@@ -225,8 +225,16 @@ async function successfulBustMutationCallback(mutationList, observer) {
       if (mutation.target.innerText.match(/^(You busted ).+/) && mutation.removedNodes.length > 0) {
         observer.disconnect();
         console.log('SuccessfulBust', Date.now()); // TEST
-        await loadController();
+
+        const newPenaltyScore = getPenaltyScore() + 128;
+        setPenaltyScore(newPenaltyScore);
+
+        const newAvailableBusts = calcAvailableBusts(getPenaltyScore(), getPenaltyThreshold());
+        setAvailableBusts(newAvailableBusts);
+        renderBustrStats({ availableBusts: getAvailableBusts(), penaltyScore: getPenaltyScore() });
+
         successfulBustUpdateController();
+        renderBustrColorClass();
       }
     }
   } catch (err) {
@@ -862,10 +870,10 @@ function successfulBustUpdateController() {
 }
 
 function refreshStatsController() {
-  const statsRefreshRate = typeof getUserSettings().statsRefreshRate === 'number' && getUserSettings().statsRefreshRate > 0 ? getUserSettings().statsRefreshRate : 30;
+  const statsRefreshRate = typeof getUserSettings().statsRefreshRate === 'number' && getUserSettings().statsRefreshRate > 0 ? getUserSettings().statsRefreshRate : 60;
   setInterval(async () => {
     await loadController();
-  }, statsRefreshRate * 1000 || 30000);
+  }, statsRefreshRate * 1000 || 60000);
 }
 
 function viewportResizeController() {
