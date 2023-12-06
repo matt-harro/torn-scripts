@@ -9,8 +9,48 @@
 // @run-at       document-end
 // ==/UserScript==
 
-//////// UTIL FUNCTIONS /////////
+//////// GLOBAL VARIABLES ////////
+const GLOBAL_STATE = {
+  userSettings: {
+    highlightWeaponColors: true, // POSSIBLE VALUES: true or false. Change value to turn on or off color highlighting
+  },
+};
 
+////  Colors
+const greenMossDark = '#4b5738';
+const greenMossDarkTranslucent = 'rgb(75, 87, 56, 0.9)';
+const greenMoss = '#57693a';
+const greenMossTranslucent = 'rgb(87, 105, 58, 0.9)';
+const greenApple = '#85b200';
+const greenAppleTranslucent = 'rgba(134, 179, 0, 0.4)';
+
+const yellow = '#ff0';
+const yellowTranslucent = 'rgba(255, 255, 0,0.4)';
+const yellowIcterine = '#fcf75e';
+const yellowIcterineTranslucent = 'rgb(252, 247, 94, 0.4)';
+
+const orangeFulvous = '#d08000';
+const orangeFulvousTranslucent = 'rgba(209, 129, 0, 0.3)';
+const orangeAmber = '#ffbf00';
+const orangeAmberTranslucent = 'rgba(255, 191, 0, 0.4)';
+
+const redFlame = '#e64d1a';
+const redFlameTranslucent = 'rgba(230, 77, 25, 0.3)';
+const redMelon = '#ffa8a8';
+const redMelonTranslucent = 'rgba(255, 168, 168, 0.3)';
+
+//////// MODEL ////////
+function getGlobalState() {
+  return GLOBAL_STATE;
+}
+function getUserSettings() {
+  return getGlobalState().userSettings;
+}
+function isHighlightingWeapons() {
+  return getUserSettings().highlightWeaponColors;
+}
+
+//////// UTIL FUNCTIONS /////////
 async function requireElement(selectors, conditionsCallback) {
   try {
     await new Promise((res, rej) => {
@@ -76,6 +116,26 @@ function createAuctionMutationObserver() {
 //////// VIEW ////////
 const stylesheet = `
   <style>
+    .display-bonus--red {
+      --db-bgc: rgba(230, 77, 25, 0.2);
+      --db-outline: #e64d1a;
+    }
+    .display-bonus--orange {
+      --db-bgc: rgba(209, 129, 0, 0.2);
+      --db-outline: #d08000;
+    }
+    .display-bonus--yellow {
+      --db-bgc: rgb(252, 247, 94, 0.15);
+      --db-outline: #ff0;
+    }
+  
+
+    .display-bonus {
+      background: var(--db-bgc);
+      outline: 1px solid var(--db-outline);
+      outline-offset: -2px;
+    }
+
     .display-bonus__container {
       display: block
     }
@@ -93,11 +153,11 @@ function renderStylesheet() {
 function renderWeaponBonuses(weaponEl) {
   let rawBonusTextArr = [...weaponEl.querySelectorAll('.iconsbonuses span')].map((spanEl) => spanEl.title);
 
-  const bonusArr = rawBonusTextArr.map((raw) => {
+  const bonusString = rawBonusTextArr.map((raw) => {
     const name = raw.match(/(?<=<b>)\w+/);
     const bonus = raw.match(/\d+%|\d+\sturns/);
 
-    return `${name} ${bonus}`;
+    return `<b>${name}</b> ${bonus}`;
   });
 
   const titleContainerEl = weaponEl.querySelector('span.title');
@@ -106,10 +166,15 @@ function renderWeaponBonuses(weaponEl) {
   const bonusContainerHTML = `<div class="display-bonus__container"></div>`;
   titleContainerEl.insertAdjacentHTML('beforeend', bonusContainerHTML);
 
-  for (const bonus of bonusArr) {
+  for (const bonus of bonusString) {
     const bonusHTML = `<p class="t-gray-6 display-bonus__bonus">${bonus}</p>`;
     titleContainerEl.querySelector('.display-bonus__container').insertAdjacentHTML('beforeend', bonusHTML);
   }
+}
+
+function renderColorClass(weaponEl) {
+  colorType = weaponEl.outerHTML.match(/(?<=glow-)\w+/);
+  weaponEl.classList.add(`display-bonus`, `display-bonus--${colorType}`);
 }
 
 //////// CONTROLLERS ////////
@@ -125,6 +190,9 @@ async function loadController() {
 
     for (const item of listItemsArr) {
       renderWeaponBonuses(item);
+      if (isHighlightingWeapons()) {
+        renderColorClass(item);
+      }
     }
 
     createAuctionMutationObserver();
