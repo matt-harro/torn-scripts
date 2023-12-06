@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Display Weapon Bonus in Auction House + Highlight
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.0
+// @version      1.0.1
 // @description  Displays weapon bonuses in an easy to read position and adds background color and outline based on weapon color value
 // @author       Ironhydedragon[2428902]
 // @match        https://www.torn.com/amarket.php*
@@ -154,7 +154,7 @@ function renderWeaponBonuses(weaponEl) {
   let rawBonusTextArr = [...weaponEl.querySelectorAll('.iconsbonuses span')].map((spanEl) => spanEl.title);
 
   const bonusString = rawBonusTextArr.map((raw) => {
-    const name = raw.match(/(?<=<b>)\w+/);
+    const name = raw.match(/(?<=<b>)\w+\s*\w*/);
     const bonus = raw.match(/\d+%|\d+\sturns/);
 
     return `<b>${name}</b> ${bonus}`;
