@@ -27,15 +27,15 @@ const greenAppleTranslucent = 'rgba(134, 179, 0, 0.4)';
 const yellow = '#ff0';
 const yellowTranslucent = 'rgba(255, 255, 0,0.4)';
 const yellowIcterine = '#fcf75e';
-const yellowIcterineTranslucent = 'rgb(252, 247, 94, 0.4)';
+const yellowIcterineTranslucent = 'rgb(252, 247, 94, 0.1)';
 
 const orangeFulvous = '#d08000';
-const orangeFulvousTranslucent = 'rgba(209, 129, 0, 0.3)';
+const orangeFulvousTranslucent = 'rgba(209, 129, 0, 0.2)';
 const orangeAmber = '#ffbf00';
 const orangeAmberTranslucent = 'rgba(255, 191, 0, 0.4)';
 
 const redFlame = '#e64d1a';
-const redFlameTranslucent = 'rgba(230, 77, 25, 0.3)';
+const redFlameTranslucent = 'rgba(230, 77, 25, 0.2)';
 const redMelon = '#ffa8a8';
 const redMelonTranslucent = 'rgba(255, 168, 168, 0.3)';
 
@@ -117,16 +117,20 @@ function createAuctionMutationObserver() {
 const stylesheet = `
   <style>
     .display-bonus--red {
-      --db-bgc: rgba(230, 77, 25, 0.2);
-      --db-outline: #e64d1a;
+      --db-bgc: ${redFlameTranslucent};
+      --db-outline: ${redFlame};
     }
     .display-bonus--orange {
-      --db-bgc: rgba(209, 129, 0, 0.2);
-      --db-outline: #d08000;
+      --db-bgc: ${orangeFulvousTranslucent};
+      --db-outline: ${orangeFulvous};
     }
     .display-bonus--yellow {
-      --db-bgc: rgb(252, 247, 94, 0.15);
-      --db-outline: #ff0;
+      --db-bgc: ${yellowIcterineTranslucent};
+      --db-outline: ${yellow};
+    }
+    .dark-mode .display-bonus--yellow {
+      --db-bgc: ${yellowIcterineTranslucent};
+      --db-outline: ${yellowTranslucent};
     }
   
 
@@ -157,7 +161,7 @@ function renderWeaponBonuses(weaponEl) {
     const name = raw.match(/(?<=<b>)\w+/);
     const bonus = raw.match(/\d+%|\d+\sturns/);
 
-    return `<b>${name}</b> ${bonus}`;
+    return `<b>${name}</b> ${bonus || ''}`;
   });
 
   const titleContainerEl = weaponEl.querySelector('span.title');
