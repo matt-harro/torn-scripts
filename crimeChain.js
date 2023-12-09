@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Display Crime Chain
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.0.1
+// @version      0.0.2
 // @description  Calculates and displays your current crime chain
 // @author       Ironhydedragon[2428902]
 // @match        https://www.torn.com/loader.php?sid=crimes*
@@ -9,30 +9,127 @@
 // @run-at       document-end
 // ==/UserScript==
 
-const API_KEY = 'LQa4pAklxWkxAHJ4';
-
 let crimeChain = 0;
+
+const redFlame = '#e64d1a';
+
+const PDA_API_KEY = '###PDA-APIKEY###';
+function isPDA() {
+  const PDATestRegex = !/^(###).+(###)$/.test(PDA_API_KEY);
+  console.log('REGEX', PDATestRegex); // TEST
+  return PDATestRegex;
+}
+
+function setApiKey(apiKey) {
+  localStorage.setItem('ihdScriptApiKey', apiKey);
+}
+function getApiKey() {
+  return localStorage.getItem('ihdScriptApiKey');
+}
+function loadApiKey() {
+  if (isPDA()) {
+    setApiKey(PDA_API_KEY);
+  }
+}
 
 const stylesheet = `
   <style>
-    #crime-chain {
-      cursor: unset;
+  #crime-chain {
+    cursor: unset;
+  }
+
+  #api-form.header-wrapper-top {
+    display: flex;
+  }
+  #api-form.header-wrapper-top .container {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    padding-left: 20px;
+  }
+
+  #api-form.header-wrapper-top h2 {
+    display: block;
+    text-align: center;
+    margin: 0;
+    width: 172px;
+  }
+
+  #api-form.header-wrapper-top input {
+    background: linear-gradient(0deg, #111, #000);
+    border-radius: 5px;
+    box-shadow: 0 1px 0 hsla(0, 0%, 100%, 0.102);
+    box-sizing: border-box;
+    color: #9f9f9f;
+    display: inline;
+    font-weight: 400;
+    height: 24px;
+    width: clamp(170px, 50%, 250px);
+    margin: 0 0 0 21px;
+    outline: none;
+    padding: 0 10px 0 10px;
+
+    font-size: 12px;
+    font-style: italic;
+    vertical-align: middle;
+    border: 0;
+    text-shadow: none;
+    z-index: 100;
+  }
+  #api-form.header-wrapper-top a {
+    margin: 0 8px;
+  }
+
+  @media screen and (max-width: 1000px) {
+    #api-form.header-wrapper-top h2 {
+      width: 148px;
     }
-    @media screen and (max-width:784px){
-      #crime-chain .linkTitle____NPyM {
-        display: block;
-      }
-      #body.r .linksContainer___LiOTN {
-        margin-left: 8px;
-      }
+    #api-form.header-wrapper-top input {
+      margin-left: 10px;
     }
+  }
+  @media screen and (max-width: 784px) {
+    #api-form.header-wrapper-top h2 {
+      font-size: 16px;
+      width: 80px;
+    }
+
+    #crime-chain .linkTitle____NPyM {
+      display: block;
+    }
+    #body.r .linksContainer___LiOTN {
+      margin-left: 8px;
+    }
+  }
 
   </style>`;
 function renderStylesheet() {
   document.head.insertAdjacentHTML('beforeend', stylesheet);
 }
 
+function renderApiForm() {
+  const topHeaderBannerEl = document.querySelector('#topHeaderBanner');
+  const apiFormHTML = `
+      <div id="api-form" class="header-wrapper-top">
+        <div class="container clear-fix"> 
+          <h2>API Key</h2>
+          <input
+            id="api-form__input"
+            type="text"
+            placeholder="Enter a full-acces API key..."
+          />
+          <a href="#" id="api-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
+        </div>
+      </div>`;
+
+  topHeaderBannerEl.insertAdjacentHTML('afterbegin', apiFormHTML);
+}
+function dismountApiForm() {
+  document.querySelector('#api-form').remove();
+}
+
 function renderCrimeChainHTML() {
+  console.log('🖼️ RENDERING CHAIN HTML'); // TEST
   const crimeChainHTML = `
     <div class="linksContainer___LiOTN">
       <span aria-labelledby="crime-chain" class="linkContainer___X16y4 inRow___VfDnd greyLineV___up8VP link-container-CrimesHub" target="_self" id="crime-chain"
@@ -60,11 +157,12 @@ function renderCrimeChainHTML() {
 }
 
 function renderCrimeChainCurrent() {
+  console.log('⛓️', crimeChain); // TEST
   document.querySelector('#crime-chain__current').textContent = Math.floor(crimeChain);
 }
 
 async function fetchCrimes(toTimestamp) {
-  const response = await fetch(`https://api.torn.com/user/?selections=log&cat=136${toTimestamp ? '&to=' + toTimestamp : ''}&key=${API_KEY}`);
+  const response = await fetch(`https://api.torn.com/user/?selections=log&cat=136${toTimestamp ? '&to=' + toTimestamp : ''}&key=${getApiKey()}`);
   const data = await response.json();
   return data;
 }
@@ -98,13 +196,39 @@ async function calcCrimeChain() {
         crimeChain = 0;
       }
     }
-    console.log('dataCollector + crimeChain', dataCollector, crimeChain); // TEST
   } catch (error) {
     console.error(error); // TEST
   }
 }
 
 //// Callbacks
+function submitFormCallback() {
+  const inputEl = document.querySelector('#api-form__input');
+  const submitBtnEl = document.querySelector('#api-form__submit');
+
+  const apiKey = inputEl.value;
+  if (apiKey.length !== 16) {
+    inputEl.style.border = `2px solid ${redFlame}`;
+    submitBtnEl.disabled = true;
+    return;
+  }
+  setApiKey(apiKey);
+  dismountApiForm();
+  window.location.reload();
+}
+
+function inputValidatorCallback(event) {
+  const inputEl = document.querySelector('#api-form__input');
+  const submitBtnEl = document.querySelector('#api-form__submit');
+  if (event.target.value.length === 16) {
+    submitBtnEl.disabled = false;
+    inputEl.style.border = '1px solid #444';
+  }
+  if (event.target.value.length !== 16) {
+    submitBtnEl.disabled = true;
+  }
+}
+
 function updateCrimeCallback(mutationList) {
   for (const mutation of mutationList) {
     if (mutation.addedNodes.length > 0 && mutation.addedNodes[0].classList && [...mutation.addedNodes[0].classList].join(' ').match(/crimes-outcome-/)) {
@@ -127,8 +251,31 @@ function updateCrimeCallback(mutationList) {
 }
 
 //////// CONTROLLERS ////////
+function apiKeyFormController() {
+  renderApiForm();
+
+  // set event liseners
+  //// Event listeners
+  document.querySelector('#api-form__submit').addEventListener('click', submitFormCallback);
+  document.querySelector('#api-form__input').addEventListener('input', inputValidatorCallback);
+  document.querySelector('#api-form__input').addEventListener('keyup', (event) => {
+    if (event.key === 'Enter' || event.keyCode === 13) {
+      submitFormCallback();
+    }
+  });
+  return;
+}
+
 function initController() {
   renderStylesheet();
+  loadApiKey();
+
+  if (!getApiKey()) {
+    console.log('noAPIKey found', getApiKey()); // TEST
+    apiKeyFormController();
+    return;
+  }
+
   renderCrimeChainHTML();
 }
 
@@ -145,6 +292,8 @@ function updateCrimeChainController() {
 (async () => {
   console.log('⛓️ Crime chain script ON!'); // TEST
   initController();
-  await loadController();
-  updateCrimeChainController();
+  if (getApiKey()) {
+    await loadController();
+    updateCrimeChainController();
+  }
 })();

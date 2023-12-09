@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.9
+// @version      1.0.10
 // @description  Guess how many busts you can do without getting jailed
 // @author       Adobi & Ironhydedragon
 // @match        https://www.torn.com/*
@@ -197,7 +197,7 @@ function submitFormCallback() {
 
   const apiKey = inputEl.value;
   if (apiKey.length !== 16) {
-    inputEl.style.border = `2px solid ${red}`;
+    inputEl.style.border = `2px solid ${redFlame}`;
     submitBtnEl.disabled = true;
     return;
   }

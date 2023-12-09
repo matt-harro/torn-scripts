@@ -1,21 +1,67 @@
-.colors {
-  background-color: #4b5738;
-  background-color: rgb(75, 87, 56);
-  background-color: #57693a;
-  background-color: rgb(87, 105, 58);
-  background-color: #86b300;
-  background-color: rgb(134, 179, 0);
+#crime-chain {
+  cursor: unset;
+}
 
-  background-color: rgb(255, 255, 0);
-  background-color: rgb(252, 247, 94);
+#api-form.header-wrapper-top {
+  display: flex;
+}
+#api-form.header-wrapper-top .container {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  padding-left: 20px;
+}
 
-  background-color: #d18100;
-  background-color: rgb(209, 129, 0);
-  background-color: #ffbf00;
-  background-color: rgb(255, 191, 0);
+#api-form.header-wrapper-top h2 {
+  display: block;
+  text-align: center;
+  margin: 0;
+  width: 172px;
+}
 
-  background-color: #e64d1a;
-  background-color: rgb(230, 77, 25);
-  background-color: #ffa8a8;
-  background-color: rgb(255, 168, 168);
+#api-form.header-wrapper-top input {
+  background: linear-gradient(0deg, #111, #000);
+  border-radius: 5px;
+  box-shadow: 0 1px 0 hsla(0, 0%, 100%, 0.102);
+  box-sizing: border-box;
+  color: #9f9f9f;
+  display: inline;
+  font-weight: 400;
+  height: 24px;
+  width: clamp(170px, 50%, 250px);
+  margin: 0 0 0 21px;
+  outline: none;
+  padding: 0 10px 0 10px;
+
+  font-size: 12px;
+  font-style: italic;
+  vertical-align: middle;
+  border: 0;
+  text-shadow: none;
+  z-index: 100;
+}
+#api-form.header-wrapper-top a {
+  margin: 0 8px;
+}
+
+@media screen and (max-width: 1000px) {
+  #api-form.header-wrapper-top h2 {
+    width: 148px;
+  }
+  #api-form.header-wrapper-top input {
+    margin-left: 10px;
+  }
+}
+@media screen and (max-width: 784px) {
+  #api-form.header-wrapper-top h2 {
+    font-size: 16px;
+    width: 80px;
+  }
+
+  #crime-chain .linkTitle____NPyM {
+    display: block;
+  }
+  #body.r .linksContainer___LiOTN {
+    margin-left: 8px;
+  }
 }
