@@ -26,11 +26,6 @@ function setApiKey(apiKey) {
 function getApiKey() {
   return localStorage.getItem('ihdScriptApiKey');
 }
-function loadApiKey() {
-  if (isPDA()) {
-    setApiKey(PDA_API_KEY);
-  }
-}
 
 const stylesheet = `
   <style>
@@ -268,7 +263,11 @@ function apiKeyFormController() {
 
 function initController() {
   renderStylesheet();
-  loadApiKey();
+
+  if (isPDA()) {
+    console.log('🌟 IS PDA!!!!!', PDA_API_KEY); // TEST
+    setApiKey(PDA_API_KEY);
+  }
 
   if (!getApiKey()) {
     console.log('noAPIKey found', getApiKey()); // TEST
