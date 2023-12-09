@@ -288,11 +288,26 @@ function updateCrimeChainController() {
   updateCrimeObserver.observe(document, { attributes: false, childList: true, subtree: true });
 }
 
+//// Promise race conditions
+// necessary as PDA scripts are inject after window.onload
+const PDAPromise = new Promise((res, rej) => {
+  if (document.readyState === 'complete') res();
+});
+
+const browserPromise = new Promise((res, rej) => {
+  window.addEventListener('load', () => res());
+});
+
 (async () => {
-  console.log('⛓️ Crime chain script ON!'); // TEST
-  initController();
-  if (getApiKey()) {
-    await loadController();
-    updateCrimeChainController();
+  try {
+    console.log('⛓️ Crime chain script ON!'); // TEST
+    await Promise.race([PDAPromise, browserPromise]);
+    initController();
+    if (getApiKey()) {
+      await loadController();
+      updateCrimeChainController();
+    }
+  } catch (error) {
+    console.error(error); // TEST
   }
 })();
