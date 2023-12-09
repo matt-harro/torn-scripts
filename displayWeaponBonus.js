@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         TORN: Display Weapon Bonus in Auction House + Highlight
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.1
-// @description  Displays weapon bonuses in an easy to read position and adds background color and outline based on weapon color value
-// @author       Ironhydedragon[2428902]
+// @version      1.0.2
+// @description  Displays weapon bonuses + stats next to weapon name in auction house
+// @author       Ironhydedragon
 // @match        https://www.torn.com/amarket.php*
 // @license      MIT
 // @run-at       document-end
