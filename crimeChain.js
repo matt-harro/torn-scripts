@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Display Crime Chain
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.0
+// @version      1.0.1
 // @description  Calculates and displays your current crime chain
 // @author       Ironhydedragon[2428902]
 // @match        https://www.torn.com/loader.php?sid=crimes*
@@ -148,6 +148,7 @@ function renderCrimeChainHTML() {
     </div>
     `;
   const titleContainerEl = document.querySelector('.crimes-app .titleContainer___QrlWP');
+  if (document.querySelector('#crime-chain')) return;
   titleContainerEl.insertAdjacentHTML('afterend', crimeChainHTML);
 }
 
