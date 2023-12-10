@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Display Crime Chain
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.2
+// @version      1.0.3
 // @description  Calculates and displays your current crime chain
 // @author       Ironhydedragon[2428902]
 // @match        https://www.torn.com/loader.php?sid=crimes*
@@ -143,7 +143,7 @@ function renderCrimeChainHTML() {
                 <path d="M11.139,20.722c0.611,0.617,1.611,0.623,2.234,0.008l7.455-7.416c0.621-0.617,0.625-1.615,0.008-2.234 c-0.613-0.615-1.611-0.619-2.23-0.006l-7.457,7.414C10.529,19.103,10.525,20.101,11.139,20.722z"></path>
               </g>
             </g></svg></span
-        ><span class="linkTitle____NPyM"><span id="crime-chain__current">###</span></span></span
+        ><span class="linkTitle____NPyM"><span aria-label="current crime chain" id="crime-chain__current">###</span></span></span
       >
     </div>
     `;
