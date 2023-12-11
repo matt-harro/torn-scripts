@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Dowload WarReport as CSV
 // @namespace    http://torn.city.com.dot.com.com
-// @version      0.0.1
+// @version      0.0.2
 // @description  Displays a button that allows users to download a csv version of their war report
 // @author       Ironhydedragon[2428902]
 // @match        https://www.torn.com/war.php?step=rankreport*
@@ -113,20 +113,41 @@ async function requireElement(selectors, conditionsCallback) {
   }
 }
 
-function createCsvContent(dataObject) {
+// function createCsvContent(dataObject) {
+//   let rows = [];
+
+//   const first = Object.keys(dataObject)[0];
+//   const headerRow = Object.keys(dataObject[first]);
+
+//   rows.push(headerRow);
+
+//   for (const entry in dataObject) {
+//     const row = Object.values(dataObject[entry]);
+//     rows.push(row);
+//   }
+
+//   return rows.map((row) => row.join(',')).join('\n');
+// }
+
+function createWarReportContent(dataObject) {
   let rows = [];
 
-  const first = Object.keys(dataObject)[0];
-  const headerRow = Object.keys(dataObject[first]);
+  for (const faction in dataObject) {
+    const factionName = dataObject[faction].name;
+    rows.push([factionName]);
 
-  rows.push(headerRow);
-
-  for (const entry in dataObject) {
-    const row = Object.values(dataObject[entry]);
-    rows.push(row);
+    const first = Object.keys(dataObject[faction].members)[0];
+    const headerRow = Object.keys(dataObject[faction].members[first]);
+    rows.push(headerRow);
+    for (const member in dataObject[faction].members) {
+      rows.push(Object.values(dataObject[faction].members[member]));
+    }
   }
-
-  return rows.map((row) => row.join(',')).join('\n');
+  return rows
+    .map((row) => {
+      return row.join(';');
+    })
+    .join('\n');
 }
 
 function download(data) {
@@ -241,6 +262,16 @@ function renderApiForm() {
       </div>`;
 
   topHeaderBannerEl.insertAdjacentHTML('afterbegin', apiFormHTML);
+
+  // set event liseners
+  //// Event listeners
+  document.querySelector('#api-form__submit').addEventListener('click', submitFormCallback);
+  document.querySelector('#api-form__input').addEventListener('input', inputValidatorCallback);
+  document.querySelector('#api-form__input').addEventListener('keyup', (event) => {
+    if (event.key === 'Enter' || event.keyCode === 13) {
+      submitFormCallback();
+    }
+  });
 }
 function dismountBustrForm() {
   document.querySelector('#api-form').remove();
@@ -266,18 +297,7 @@ async function initController() {
     renderStylesheet();
 
     if (!getApiKey() && !isPDA()) {
-      // if not saved render bustr form
       renderApiForm();
-
-      // set event liseners
-      //// Event listeners
-      document.querySelector('#api-form__submit').addEventListener('click', submitFormCallback);
-      document.querySelector('#api-form__input').addEventListener('input', inputValidatorCallback);
-      document.querySelector('#api-form__input').addEventListener('keyup', (event) => {
-        if (event.key === 'Enter' || event.keyCode === 13) {
-          submitFormCallback();
-        }
-      });
       return;
     }
 
@@ -292,6 +312,8 @@ async function initController() {
     const urlParams = new URLSearchParams(window.location.href);
     const reportId = urlParams.get('rankID').match(/\d*/);
     setReportId(reportId);
+
+    renderDownloadCsvEl();
   } catch (error) {
     console.error(error);
   }
@@ -300,9 +322,9 @@ async function initController() {
 async function rankedWarCsvController() {
   try {
     const data = await fetchRankedWarReport(getReportId(), getApiKey());
-    const memberData = data.rankedwarreport.factions[getFactionId()].members; // TEST
+    const factionData = data.rankedwarreport.factions; // TEST
 
-    const csvContent = createCsvContent(memberData);
+    const csvContent = createWarReportContent(factionData);
     download(csvContent);
   } catch (error) {
     console.error(error); // TEST
