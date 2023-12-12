@@ -286,7 +286,7 @@ async function exportCsvClickHandler(e) {
     const warReportData = await fetchRankedWarReport(getReportId(), getApiKey());
     const warReportContent = createWarReportContent(warReportData);
 
-    downloadCsv(warReportContent, `war-report${getReportId()}`);
+    downloadCsv(warReportContent, `Ranked War Report [${getReportId()}]`);
     // copyToClipBoard(warReportContent);
 
     e.target.classList.add('disable');
