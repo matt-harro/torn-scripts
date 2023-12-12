@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Dowload WarReport as CSV
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.1
+// @version      1.0.2
 // @description  Displays a button that allows users to download a csv version of their war report
 // @author       Ironhydedragon[2428902]
 // @match        https://www.torn.com/war.php?step=rankreport*
