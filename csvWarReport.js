@@ -138,66 +138,66 @@ function inputValidatorCallback(event) {
 
 function renderApiFormStylesheet() {
   const apiFormStylesheetHTML = `
-  <style>
-    #api-form.header-wrapper-top {
-      display: flex;
-    }
-    #api-form.header-wrapper-top .container {
-      display: flex;
-      justify-content: start;
-      align-items: center;
-      padding-left: 20px;
-    }
+    <style>
+      #api-form.header-wrapper-top {
+        display: flex;
+      }
+      #api-form.header-wrapper-top .container {
+        display: flex;
+        justify-content: start;
+        align-items: center;
+        padding-left: 20px;
+      }
 
-    #api-form.header-wrapper-top h2 {
-      display: block;
-      text-align: center;
-      margin: 0;
-      width: 172px;
-    }
+      #api-form.header-wrapper-top h2 {
+        display: block;
+        text-align: center;
+        margin: 0;
+        width: 172px;
+      }
 
-    #api-form.header-wrapper-top input {
-      background: linear-gradient(0deg,#111,#000);
-      border-radius: 5px;
-      box-shadow: 0 1px 0 hsla(0,0%,100%,.102);
-      box-sizing: border-box;
-      color: #9f9f9f;
-      display: inline;
-      font-weight: 400;
-      height: 24px;
-      width: clamp(170px, 50%, 250px);
-      margin: 0 0 0 21px;
-      outline: none;
-      padding: 0 10px 0 10px;
-      
-      font-size: 12px;
-      font-style: italic; 
-      vertical-align: middle;
-      border: 0;
-      text-shadow: none;
-      z-index: 100;
-    }
-    #api-form.header-wrapper-top a {
-      margin: 0 8px;
-    }
-  </style>`;
+      #api-form.header-wrapper-top input {
+        background: linear-gradient(0deg,#111,#000);
+        border-radius: 5px;
+        box-shadow: 0 1px 0 hsla(0,0%,100%,.102);
+        box-sizing: border-box;
+        color: #9f9f9f;
+        display: inline;
+        font-weight: 400;
+        height: 24px;
+        width: clamp(170px, 50%, 250px);
+        margin: 0 0 0 21px;
+        outline: none;
+        padding: 0 10px 0 10px;
+        
+        font-size: 12px;
+        font-style: italic; 
+        vertical-align: middle;
+        border: 0;
+        text-shadow: none;
+        z-index: 100;
+      }
+      #api-form.header-wrapper-top a {
+        margin: 0 8px;
+      }
+    </style>`;
   document.head.insertAdjacentHTML('beforeend', apiFormStylesheetHTML);
 }
 
 function renderApiForm() {
   const topHeaderBannerEl = document.querySelector('#topHeaderBanner');
   const apiFormHTML = `
-      <div id="api-form" class="header-wrapper-top">
-        <div class="container clear-fix"> 
-          <h2>API Key</h2>
-          <input
-            id="api-form__input"
-            type="text"
-            placeholder="Enter a full-acces API key..."
-          />
-          <a href="#" id="api-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
-        </div>
-      </div>`;
+        <div id="api-form" class="header-wrapper-top">
+          <div class="container clear-fix"> 
+            <h2>API Key</h2>
+            <input
+              id="api-form__input"
+              type="text"
+              placeholder="Enter a full-acces API key..."
+            />
+            <a href="#" id="api-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
+          </div>
+        </div>`;
 
   topHeaderBannerEl.insertAdjacentHTML('afterbegin', apiFormHTML);
 
@@ -228,22 +228,30 @@ function createWarReportContent(dataObject) {
 
   for (const faction in dataObject) {
     const factionName = dataObject[faction].name;
-    rows.push([factionName]);
+    rows.push(factionName);
 
-    const first = Object.keys(dataObject[faction].members)[0];
-    const headerRow = Object.keys(dataObject[faction].members[first]);
+    // const first = Object.keys(dataObject[faction].members)[0];
+    // const headerRow = Object.keys(dataObject[faction].members[first]);
+    const headerRow = ['Members', 'Level', 'Attacks', 'Score'];
     rows.push(headerRow);
 
     for (const member in dataObject[faction].members) {
-      rows.push(Object.values(dataObject[faction].members[member]));
+      // rows.push(Object.values(dataObject[faction].members[member]));
+      const rawRow = Object.values(dataObject[faction].members[member]);
+      const customRow = rawRow
+        .filter((item, index) => index !== 1)
+        .map((item, index) => {
+          if (index === 0) {
+            return `${item} [${member}]`;
+          }
+          return item;
+        });
+      rows.push(customRow);
+      console.log(member, customRow); // TEST
     }
   }
 
-  return rows
-    .map((row) => {
-      return row.join(';');
-    })
-    .join('\n');
+  return rows.map((row) => (Array.isArray(row) ? row.map((value) => `"${value}"`).join(';') : `"${row}"`)).join('\r\n');
 }
 
 function downloadCsv(data, fileName) {
@@ -279,7 +287,7 @@ async function exportCsvClickHandler(e) {
     const warReportContent = createWarReportContent(warReportData);
 
     downloadCsv(warReportContent, `war-report${getReportId()}`);
-    copyToClipBoard(warReportContent);
+    // copyToClipBoard(warReportContent);
 
     e.target.classList.add('disable');
   } catch (error) {
@@ -291,51 +299,51 @@ async function exportCsvClickHandler(e) {
 
 function renderStylesheet() {
   const stylesheetHTML = `
-  <style>
-    #export-csv {
-      float: right; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      margin-right: 10px
-    }
-    #export-csv.disable {
-      color: #999;
-    }
-    #export-csv svg {
-      padding-right: 2px
-      fill: currentcolor;
-      width: 15px;
-      height: 16px;
-    }
-    #export-csv.disable csv {
-      fill: #999;
-    }
-  </style>`;
+    <style>
+      #export-csv {
+        float: right; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        margin-right: 10px
+      }
+      #export-csv.disable {
+        color: #999;
+      }
+      #export-csv svg {
+        padding-right: 2px
+        fill: currentcolor;
+        width: 15px;
+        height: 16px;
+      }
+      #export-csv.disable csv {
+        fill: #999;
+      }
+    </style>`;
   const headEl = document.querySelector('head');
   headEl.insertAdjacentHTML('beforeend', stylesheetHTML);
 }
 
 function renderExportCsvEl() {
   const linkHTML = `
-   <span id="export-csv">
-      <svg
-        viewBox="0 0 64 64"
-        version="1.1"
-        xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink"
-        xml:space="preserve"
-        xmlns:serif="http://www.serif.com/"
-        style="fill: currentcolor; /* fill-rule: evenodd; */ /* clip-rule: evenodd; */ /* stroke-linejoin: round; */ /* stroke-miterlimit: 2; */"
-        stroke="currentcolor"
-      >
-        <g id="SVGRepo_iconCarrier">
-          <rect id="Icons" x="-576" y="-128" width="1280" height="800" style="fill: none"></rect>
-          <path id="download" d="M48.089,52.095l0,4l-32.049,0l0,-4l32.049,0Zm-16.025,-4l-16.024,-16l8.098,0l-0.049,-24l15.975,0l0.048,24l7.977,0l-16.025,16Z"></path>
-        </g>
-        </svg>
-        Export CSV
-      </span>`;
+    <span id="export-csv">
+        <svg
+          viewBox="0 0 64 64"
+          version="1.1"
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+          xml:space="preserve"
+          xmlns:serif="http://www.serif.com/"
+          style="fill: currentcolor; /* fill-rule: evenodd; */ /* clip-rule: evenodd; */ /* stroke-linejoin: round; */ /* stroke-miterlimit: 2; */"
+          stroke="currentcolor"
+        >
+          <g id="SVGRepo_iconCarrier">
+            <rect id="Icons" x="-576" y="-128" width="1280" height="800" style="fill: none"></rect>
+            <path id="download" d="M48.089,52.095l0,4l-32.049,0l0,-4l32.049,0Zm-16.025,-4l-16.024,-16l8.098,0l-0.049,-24l15.975,0l0.048,24l7.977,0l-16.025,16Z"></path>
+          </g>
+          </svg>
+          Export CSV
+        </span>`;
 
   const titleContainerEl = document.querySelector('.war-report-wrap .title-black');
   titleContainerEl.insertAdjacentHTML('beforeend', linkHTML);
