@@ -307,6 +307,9 @@ function renderStylesheet() {
         align-items: center; 
         margin-right: 10px
       }
+      #export-csv:hover {
+        cursor: pointer;
+      }
       #export-csv.disable {
         color: #999;
       }
