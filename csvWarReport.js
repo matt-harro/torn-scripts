@@ -216,23 +216,6 @@ function dismountApiForm() {
 }
 
 //////// CSV RELATED CODE ////////
-
-// function createCsvContent(dataObject) {
-//   let rows = [];
-
-//   const first = Object.keys(dataObject)[0];
-//   const headerRow = Object.keys(dataObject[first]);
-
-//   rows.push(headerRow);
-
-//   for (const entry in dataObject) {
-//     const row = Object.values(dataObject[entry]);
-//     rows.push(row);
-//   }
-
-//   return rows.map((row) => row.join(',')).join('\n');
-// }
-
 async function fetchRankedWarReport(reportID, apiKey) {
   const response = await fetch(`https://api.torn.com/torn/${reportID}?selections=rankedwarreport&key=${apiKey}`);
   return await response.json();
@@ -245,19 +228,17 @@ function createWarReportContent(dataObject) {
 
   for (const faction in dataObject) {
     const factionName = dataObject[faction].name;
-    console.log('data', factionName); // TEST
     rows.push([factionName]);
 
     const first = Object.keys(dataObject[faction].members)[0];
-    console.log('first', first); // TEST
     const headerRow = Object.keys(dataObject[faction].members[first]);
-    console.log('headerRow', headerRow); // TEST
     rows.push(headerRow);
-    console.log('here', dataObject[faction].members); // TEST
+
     for (const member in dataObject[faction].members) {
       rows.push(Object.values(dataObject[faction].members[member]));
     }
   }
+
   return rows
     .map((row) => {
       return row.join(';');
@@ -276,12 +257,30 @@ function downloadCsv(data, fileName) {
   a.click();
 }
 
+// async function copyToClipBoard(data) {
+//   try {
+//     console.log('copyCSV'); // TEST
+
+//     const blob = new Blob([data], { type: 'text/csv' });
+//     // const clipboardItem = new ClipboardItem({
+//     //   'text/plain': await new Promise((res) => {
+//     //     res(blob);
+//     //   }),
+//     // });
+//     navigator.clipboard.writeText([await blob.text()]);
+//   } catch (error) {
+//     console.error(error); // TEST
+//   }
+// }
+
 async function exportCsvClickHandler(e) {
   try {
-    console.log(getReportId(), getApiKey()); // TEST
     const warReportData = await fetchRankedWarReport(getReportId(), getApiKey());
     const warReportContent = createWarReportContent(warReportData);
+
     downloadCsv(warReportContent, `war-report${getReportId()}`);
+    copyToClipBoard(warReportContent);
+
     e.target.classList.add('disable');
   } catch (error) {
     console.error(error); // TEST
@@ -344,7 +343,7 @@ function renderExportCsvEl() {
   document.querySelector('#export-csv').addEventListener('click', exportCsvClickHandler);
 }
 
-function apiFormController() {}
+// function apiFormController() {} // TODO
 
 //////// CONTROLLERS ////////
 async function initController() {
