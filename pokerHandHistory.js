@@ -47,16 +47,39 @@ async function requireElement(selectors, conditionsCallback) {
 
 function renderPokerStylesheet() {
   const stylesheetHTML = `
-  <style type="text/css">
-    #top-page-links-list .m-left10 {
-      margin-left: unset;
+  <style>
+    #export-csv {
+      width: 100%;
+      display: flex; 
+      justify-content: end; 
+      align-items: center; 
+      margin: 0px 0px 7px 0px;
+      color: #999;
     }
-    @media screen and (max-width:1000px){
-      #body #csv-button-label {
-        display: none !important;
-      }
+    #export-csv.disable {
+      color: #666;
     }
-    </style>`;
+    #export-csv:hover {
+      cursor: pointer;
+      color: #fff;
+    }
+    #export-csv svg {
+      padding-right: 2px
+      stroke: #999;
+      fill: #999;
+      width: 22px;
+      height: 20px;
+      padding-right: 3px;
+    }
+    #export-csv.disable csv {
+      stroke: #666;
+      fill: #999;
+    }
+    #export-csv:hover svg {
+      stroke: #fff;
+      fill: #fff;
+    }
+  </style>`;
 
   document.head.insertAdjacentHTML('beforeend', stylesheetHTML);
 }
@@ -72,43 +95,20 @@ function fixHtml() {
 
 function renderCsvEl() {
   const csvButtonHTML = `
-     <a
-      role="button"
-      aria-label="download-csv"
-      id="csv-button"
-      class="h c-pointer line-h24 m-left10"
-    >
-      <span class="icon-wrap">
-        <svg
-          fill="#000000"
-          height="16px"
-          width="20px"
-          version="1.1"
-          id="Layer_1"
-          xmlns="http://www.w3.org/2000/svg"
-          xmlns:xlink="http://www.w3.org/1999/xlink"
-          viewBox="0 0 512 512"
-          xml:space="preserve"
-        >
-          <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-          <g
-            id="SVGRepo_tracerCarrier"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          ></g>
+    <div class="content-title m-bottom10 contentTitleWrap___CS_CC">
+      <span id="export-csv">
+        <svg viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/">
           <g id="SVGRepo_iconCarrier">
-            <path
-              d="M442.2,186.2H302.5V0h-93.1v186.2H69.8L256,418.9L442.2,186.2z M465.5,372.4v93.1H46.5v-93.1H0V512h512V372.4H465.5z"
-            ></path>
+            <rect id="Icons" x="-576" y="-128" width="1280" height="800" style="fill: none"></rect>
+            <path id="download" d="M48.089,52.095l0,4l-32.049,0l0,-4l32.049,0Zm-16.025,-4l-16.024,-16l8.098,0l-0.049,-24l15.975,0l0.048,24l7.977,0l-16.025,16Z"></path>
           </g>
         </svg>
-      </span>
-      <span id="csv-button-label" class="icon-label">CSV</span>
-    </a>`;
-  const pokerIcons = document.querySelectorAll('#top-page-links-list a[role="buton]');
-  pokerIcons[0].insertAdjacentHTML('afterend', csvButtonHTML);
-
-  // TODO: renders unusable on PDA for some reason
+      Export Hand History CSV</span>
+      <hr class="page-head-delimiter hr___XBw2N">
+    </div>`;
+  const header = document.querySelector('.content-title');
+  if (document.querySelectorAll('.content-title').length > 1) return;
+  header.insertAdjacentHTML('afterend', csvButtonHTML);
 }
 
 function createCsvContent(dataObjectArr) {
@@ -127,18 +127,18 @@ function createCsvContent(dataObjectArr) {
   return rows.map((row) => row.join(',')).join('\n');
 }
 
-async function copyCsv(data) {
-  console.log('copyCSV'); // TEST
-  navigator.clipboard.writeText(data);
+// async function copyCsv(data) {
+//   console.log('copyCSV'); // TEST
+//   navigator.clipboard.writeText(data);
 
-  // const blob = new Blob([data], { type: 'text/csv' });
-  // const clipboardItem = new ClipboardItem(
-  //   await new Promise((res) => {
-  //     res(blob);
-  //   })
-  // );
-  // navigator.clipboard.write([clipboardItem]);
-}
+//   // const blob = new Blob([data], { type: 'text/csv' });
+//   // const clipboardItem = new ClipboardItem(
+//   //   await new Promise((res) => {
+//   //     res(blob);
+//   //   })
+//   // );
+//   // navigator.clipboard.write([clipboardItem]);
+// }
 
 function downloadCsv(data) {
   const blob = new Blob([data], { type: 'text/csv' });
@@ -170,16 +170,16 @@ function handHistoryObserver() {
 }
 
 function csvClickHandler() {
-  const csvBtnEl = document.querySelector('#csv-button');
-  csvBtnEl.addEventListener('click', () => {
+  const exportCsvEl = document.querySelector('#export-csv');
+  exportCsvEl.addEventListener('click', () => {
     const csvContent = createCsvContent(handHistory);
     // if (isPDA()) {
     //   copyCsv(csvContent);
     // }
-    copyCsv(csvContent);
-    async () => {
-      console.log(await navigator.clipboard.read());
-    };
+    // copyCsv(csvContent);
+    // async () => {
+    //   console.log(await navigator.clipboard.read());
+    // };
     console.log('✋', handHistory); // TEST
     downloadCsv(csvContent);
 
@@ -192,6 +192,7 @@ function csvClickHandler() {
     console.log('♠️ Poker Hand History script is ON!'); // TEST
     renderPokerStylesheet();
     fixHtml();
+    await requireElement('.content-title');
     renderCsvEl();
     await requireElement('.messagesWrap___tBx9u');
     handHistoryObserver();
