@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         TORN: Dowload WarReport as CSV
+// @name         TORN: Dowload Chain Report as CSV
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.3
-// @description  Displays a button that allows users to download a csv version of their war report
+// @version      0.0.0
+// @description  Displays a button that allows users to download a csv version of their chain report
 // @author       Ironhydedragon[2428902]
-// @match        https://www.torn.com/war.php?step=rankreport*
+// @match        https://www.torn.com/war.php?step=chainreport*
 // @license      MIT
 // @run-at       document-end
 // ==/UserScript==
@@ -38,23 +38,14 @@ function setApikey(apiKey) {
   localStorage.setItem('tornDownloadCsvApiKey', apiKey);
 }
 
-// function getUserId() {
-//   return getGlobalState().userId;
+// function getFactionId() {
+//   return getGlobalState().factionId;
 // }
-// function setUserId(value, currentState) {
+// function setFactionId(value, currentState) {
 //   currentState = currentState || getGlobalState();
-//   const newState = { ...currentState, userId: value };
+//   const newState = { ...currentState, factionId: value };
 //   return setGlobalState(newState);
 // }
-
-function getFactionId() {
-  return getGlobalState().factionId;
-}
-function setFactionId(value, currentState) {
-  currentState = currentState || getGlobalState();
-  const newState = { ...currentState, factionId: value };
-  return setGlobalState(newState);
-}
 
 function getReportId() {
   return getGlobalState().reportId;
@@ -65,19 +56,19 @@ function setReportId(value, currentState) {
   return setGlobalState(newState);
 }
 
-async function fetchPlayerData(apiKey) {
-  try {
-    const response = await fetch(`https://api.torn.com/user/?selections=profile&key=${apiKey}`);
-    const data = await response.json();
+// async function fetchPlayerData(apiKey) {
+//   try {
+//     const response = await fetch(`https://api.torn.com/user/?selections=profile&key=${apiKey}`);
+//     const data = await response.json();
 
-    if (data.error && (data.error.error === 'Incorrect key' || data.error.error === 'Access level of this key is not high enough')) {
-      throw new Error(`Something went wrong: ${data.error.error}`);
-    }
-    return data;
-  } catch (error) {
-    console.error(error);
-  }
-}
+//     if (data.error && (data.error.error === 'Incorrect key' || data.error.error === 'Access level of this key is not high enough')) {
+//       throw new Error(`Something went wrong: ${data.error.error}`);
+//     }
+//     return data;
+//   } catch (error) {
+//     console.error(error);
+//   }
+// }
 
 //////// UTIL FUNCITONS ////////
 async function requireElement(selectors, conditionsCallback) {
@@ -215,48 +206,86 @@ function dismountApiForm() {
   document.querySelector('#api-form').remove();
 }
 
-function apiFormController() {
-  renderApiFormStylesheet();
-  renderApiForm();
-}
-
 //////// CSV RELATED CODE ////////
-async function fetchRankedWarReport(reportID, apiKey) {
-  const response = await fetch(`https://api.torn.com/torn/${reportID}?selections=rankedwarreport&key=${apiKey}`);
-  return await response.json();
+async function fetchChainReport(reportID, apiKey) {
+  try {
+    const response = await fetch(`https://api.torn.com/torn/${reportID}?selections=chainreport&key=${apiKey}`);
+    return await response.json();
+  } catch (error) {
+    console.error(error); // TEST
+  }
 }
 
-function createWarReportContent(dataObject) {
-  let rows = [];
+async function fetchFactionBasic(apiKey, factionId = '') {
+  try {
+    const response = await fetch(`https://api.torn.com/faction/${factionId}?selections=basic&key=${apiKey}`);
+    return await response.json();
+  } catch (error) {
+    console.error(error); // TEST
+  }
+}
 
-  dataObject = dataObject.rankedwarreport.factions;
+async function fetchUserData(apiKey, userId = '') {
+  try {
+    const response = await fetch(`https://api.torn.com/user/${userId}?selections=profile&key=${apiKey}`);
+    return await response.json();
+  } catch (error) {
+    console.error(error); // TEST
+  }
+}
 
-  for (const faction in dataObject) {
-    const factionName = dataObject[faction].name;
+async function createChainreportContent(dataObject) {
+  try {
+    let rows = [];
+    chainReport = dataObject.chainreport;
+    const factionBasicInfo = await fetchFactionBasic(getApiKey(), chainReport.factionID);
+
+    const factionName = factionBasicInfo.name;
     rows.push(factionName);
 
-    // const first = Object.keys(dataObject[faction].members)[0];
-    // const headerRow = Object.keys(dataObject[faction].members[first]);
-    const headerRow = ['Members', 'Level', 'Attacks', 'Score'];
+    const headerRow = ['Members', 'Respect', 'Best', 'Avg', 'Attacks', 'Leave', 'Mug', 'Hosp', 'War', 'Assist', 'Retal', 'Overseas', 'Draw', 'Escape', 'Loss'];
     rows.push(headerRow);
 
-    for (const member in dataObject[faction].members) {
-      // rows.push(Object.values(dataObject[faction].members[member]));
-      const rawRow = Object.values(dataObject[faction].members[member]);
-      const customRow = rawRow
-        .filter((item, index) => index !== 1)
-        .map((item, index) => {
-          if (index === 0) {
-            return `${item} [${member}]`;
-          }
-          return item;
-        });
-      rows.push(customRow);
-      console.log(member, customRow); // TEST
-    }
-  }
+    const memberKeysArr = headerRow.map((value) => value.toLowerCase()).toSpliced(0, 1, 'userID');
 
-  return rows.map((row) => (Array.isArray(row) ? row.map((value) => `"${value}"`).join(';') : `"${row}"`)).join('\r\n');
+    const membersNamesArr = [...document.querySelectorAll('.members-names-rows li')];
+    const membersStatsArr = [...document.querySelectorAll('.members-stats-rows li')];
+
+    for (const member of membersElArr) {
+      const row = [];
+      const name = membersNamesArr.querySelectorAll('honor-text')[1].textContent;
+    }
+
+    // for (const member in chainReport.members) {
+    //   let rawRow = [];
+    //   const memberObj = chainReport.members[member];
+    //   for (const key of memberKeysArr) {
+    //     rawRow.push(memberObj[key]);
+    //   }
+
+    //   const customRow = rawRow.map(async (value, index, array) => {
+    //     // console.log(value, index, array); // TEST
+    //     if (index === 0) {
+    //       // console.log(value, index); // TEST
+    //       // console.log(factionBasicInfo.members); // TEST
+    //       if (!factionBasicInfo.members[value]) {
+    //         const userData = await fetchUserData(getApiKey(), value);
+    //         return `${userData.name} [${value}]`;
+    //       }
+    //       console.log(factionBasicInfo.members[value]); // TEST
+    //       return `${factionBasicInfo.members[value]} [${value}]`;
+    //     }
+    //     return value;
+    //   });
+    //   rows.push(customRow);
+    //   // }
+    // }
+    console.log(rows); // TEST
+
+    return rows.map((row) => (Array.isArray(row) ? row.map((value) => `"${value}"`).join(';') : `"${row}"`)).join('\r\n');
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function downloadCsv(data, fileName) {
@@ -288,11 +317,11 @@ function downloadCsv(data, fileName) {
 
 async function exportCsvClickHandler(e) {
   try {
-    const warReportData = await fetchRankedWarReport(getReportId(), getApiKey());
-    const warReportContent = createWarReportContent(warReportData);
+    const chainReportData = await fetchChainReport(getReportId(), getApiKey());
+    const chainReportContent = createChainreportContent(chainReportData);
 
-    downloadCsv(warReportContent, `Ranked War Report [${getReportId()}]`);
-    // copyToClipBoard(warReportContent);
+    downloadCsv(chainReportContent, `Chain Report [${getReportId()}]`);
+    // copyToClipBoard(chainReportContent);
 
     e.target.classList.add('disable');
   } catch (error) {
@@ -353,7 +382,7 @@ function renderExportCsvEl() {
           Export CSV
         </span>`;
 
-  const titleContainerEl = document.querySelector('.war-report-wrap .title-black');
+  const titleContainerEl = document.querySelector('.chain-report-wrap .title-black');
   titleContainerEl.insertAdjacentHTML('beforeend', linkHTML);
 
   document.querySelector('#export-csv').addEventListener('click', exportCsvClickHandler);
@@ -367,7 +396,6 @@ async function initController() {
     renderStylesheet();
 
     if (!getApiKey() && !isPDA()) {
-      renderApiFormStylesheet();
       renderApiForm();
       return;
     }
@@ -376,21 +404,21 @@ async function initController() {
       setApikey(PDA_API_KEY);
     }
 
-    const playerData = await fetchPlayerData(getApiKey());
-    const factionId = playerData.faction.faction_id;
-    setFactionId(factionId);
+    // const playerData = await fetchPlayerData(getApiKey());
+    // const factionId = playerData.faction.faction_id;
+    // setFactionId(factionId);
 
     const urlParams = new URLSearchParams(window.location.href);
-    const reportId = urlParams.get('rankID').match(/\d*/);
+    const reportId = urlParams.get('chainID').match(/\d*/);
     setReportId(reportId);
   } catch (error) {
     console.error(error);
   }
 }
 
-async function rankedWarCsvController() {
+async function chainReportCsvController() {
   try {
-    await requireElement('.war-report-wrap .title-black');
+    await requireElement('.chain-report-wrap .title-black');
     renderExportCsvEl();
   } catch (error) {
     console.error(error); // TEST
@@ -409,11 +437,11 @@ async function rankedWarCsvController() {
 
 (async () => {
   try {
-    console.log('🔫 WarReport CSV script is on!'); // TEST
+    console.log('⛓️ ChainReport CSV script is on!'); // TEST
     // await Promise.race([PDAPromise, browserPromise]);
     await initController();
     if (getApiKey()) {
-      await rankedWarCsvController();
+      await chainReportCsvController();
     }
   } catch (error) {
     console.error(error); // TEST
