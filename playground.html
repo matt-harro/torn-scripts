@@ -6,74 +6,42 @@
     <title>Playground</title>
   </head>
   <body>
-    <span style="float: right; display: flex; justify-content: center; align-items: center; margin-right: 10px">
-      <svg
-        fill="#999999"
-        width="64px"
-        height="64px"
-        viewBox="0 0 64 64"
-        version="1.1"
-        xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink"
-        xml:space="preserve"
-        xmlns:serif="http://www.serif.com/"
-        style="fill-rule: evenodd; clip-rule: evenodd; stroke-linejoin: round; stroke-miterlimit: 2"
-        stroke="#999999"
-      >
-        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-        <g id="SVGRepo_iconCarrier">
-          <rect id="Icons" x="-576" y="-128" width="1280" height="800" style="fill: none"></rect>
-          <g id="Icons1" serif:id="Icons">
-            <g id="Strike"></g>
-            <g id="H1"></g>
-            <g id="H2"></g>
-            <g id="H3"></g>
-            <g id="list-ul"></g>
-            <g id="hamburger-1"></g>
-            <g id="hamburger-2"></g>
-            <g id="list-ol"></g>
-            <g id="list-task"></g>
-            <g id="trash"></g>
-            <g id="vertical-menu"></g>
-            <g id="horizontal-menu"></g>
-            <g id="sidebar-2"></g>
-            <g id="Pen"></g>
-            <g id="Pen1" serif:id="Pen"></g>
-            <g id="clock"></g>
-            <g id="external-link"></g>
-            <g id="hr"></g>
-            <g id="info"></g>
-            <g id="warning"></g>
-            <g id="plus-circle"></g>
-            <g id="minus-circle"></g>
-            <g id="vue"></g>
-            <path id="download" d="M48.089,52.095l0,4l-32.049,0l0,-4l32.049,0Zm-16.025,-4l-16.024,-16l8.098,0l-0.049,-24l15.975,0l0.048,24l7.977,0l-16.025,16Z"></path>
-            <g id="cog"></g>
-            <g id="logo"></g>
-            <g id="radio-check"></g>
-            <g id="eye-slash"></g>
-            <g id="eye"></g>
-            <g id="toggle-off"></g>
-            <g id="shredder"></g>
-            <g id="spinner--loading--dots-" serif:id="spinner [loading, dots]"></g>
-            <g id="react"></g>
-            <g id="check-selected"></g>
-            <g id="turn-off"></g>
-            <g id="code-block"></g>
-            <g id="user"></g>
-            <g id="coffee-bean"></g>
-            <g id="coffee-beans"><g id="coffee-bean1" serif:id="coffee-bean"></g></g>
-            <g id="coffee-bean-filled"></g>
-            <g id="coffee-beans-filled"><g id="coffee-bean2" serif:id="coffee-bean"></g></g>
-            <g id="clipboard"></g>
-            <g id="clipboard-paste"></g>
-            <g id="clipboard-copy"></g>
-            <g id="Layer1"></g>
+    <div class="hand-history-modal">
+      <div class="hand-history-modal__overlay"></div>
+      <div class="hand-history-modal__textarea">
+        <svg width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+          <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+          <g id="SVGRepo_iconCarrier">
+            <path
+              d="M8.00386 9.41816C7.61333 9.02763 7.61334 8.39447 8.00386 8.00395C8.39438 7.61342 9.02755 7.61342 9.41807 8.00395L12.0057 10.5916L14.5907 8.00657C14.9813 7.61605 15.6144 7.61605 16.0049 8.00657C16.3955 8.3971 16.3955 9.03026 16.0049 9.42079L13.4199 12.0058L16.0039 14.5897C16.3944 14.9803 16.3944 15.6134 16.0039 16.0039C15.6133 16.3945 14.9802 16.3945 14.5896 16.0039L12.0057 13.42L9.42097 16.0048C9.03045 16.3953 8.39728 16.3953 8.00676 16.0048C7.61624 15.6142 7.61624 14.9811 8.00676 14.5905L10.5915 12.0058L8.00386 9.41816Z"
+              fill="#0F0F0F"
+            ></path>
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M23 12C23 18.0751 18.0751 23 12 23C5.92487 23 1 18.0751 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12ZM3.00683 12C3.00683 16.9668 7.03321 20.9932 12 20.9932C16.9668 20.9932 20.9932 16.9668 20.9932 12C20.9932 7.03321 16.9668 3.00683 12 3.00683C7.03321 3.00683 3.00683 7.03321 3.00683 12Z"
+              fill="#0F0F0F"
+            ></path>
           </g>
-        </g>
-      </svg>
-      Export CSV
-    </span>
+        </svg>
+        <textarea class="hand-history-modal__textarea-input" name="" id="" cols="30" rows="10"></textarea>
+        <span class="hand-history-modal__textarea-copy">
+          <svg width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M21 8C21 6.34315 19.6569 5 18 5H10C8.34315 5 7 6.34315 7 8V20C7 21.6569 8.34315 23 10 23H18C19.6569 23 21 21.6569 21 20V8ZM19 8C19 7.44772 18.5523 7 18 7H10C9.44772 7 9 7.44772 9 8V20C9 20.5523 9.44772 21 10 21H18C18.5523 21 19 20.5523 19 20V8Z"
+                fill="#0F0F0F"
+              ></path>
+              <path d="M6 3H16C16.5523 3 17 2.55228 17 2C17 1.44772 16.5523 1 16 1H6C4.34315 1 3 2.34315 3 4V18C3 18.5523 3.44772 19 4 19C4.55228 19 5 18.5523 5 18V4C5 3.44772 5.44772 3 6 3Z" fill="#0F0F0F"></path>
+            </g>
+          </svg>
+        </span>
+      </div>
+    </div>
   </body>
 </html>
