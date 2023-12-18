@@ -8,6 +8,7 @@
 // @license      MIT
 // ==/UserScript==
 
+let db;
 let handHistory = [];
 
 //////// UTIL: GENERAL FUNCTIONS ////////
@@ -257,6 +258,62 @@ function renderModal() {
   `;
   document.body.insertAdjacentHTML('afterbegin', modalHTML);
 }
+
+// //////// MODEL: INDEXED DB ////////
+function openDB() {
+  // Open database
+  const request = window.indexedDB.open('pokerHandHistoryDB', 1);
+  request.onerror = (event) => {
+    console.error('indexedDB request error: ', event); // TEST
+  };
+  request.onsuccess = (event) => {
+    console.log('indexedDB request success: ', event); // TEST
+    db = event.target.result;
+  };
+}
+openDB();
+
+// request.onupgradeneeded = (event) => {
+//   // Save the IDBDatabase interface
+//   const db = event.target.result;
+
+//   // Create an objectStore for this database
+//   if (!db.objectStoreNames.contains('messageStore')) {
+//     console.log('PokerHistory: initIndexDB open onupgradeneeded create store');
+//     const objectStore = db.createObjectStore('messageStore', { keyPath: 'autoId', autoIncrement: true });
+//   }
+// };
+
+// function dbReadAll() {
+//   if (!db) {
+//     console.error('PokerHistory: dbReadAll db is null');
+//   }
+
+//   const transaction = db.transaction(['messageStore'], 'readonly');
+//   transaction.oncomplete = (event) => {
+//     console.log('PokerHistory: dbReadAll transaction oncomplete');
+//   };
+//   transaction.onerror = (event) => {
+//     console.error('PokerHistory: dbReadAll transaction onerror');
+//   };
+
+//   const store = transaction.objectStore('messageStore');
+//   return new Promise((resolve, reject) => {
+//     const resultList = [];
+//     store.openCursor().onerror = (event) => {
+//       resolve(resultList);
+//     };
+//     store.openCursor().onsuccess = (event) => {
+//       const cursor = event.target.result;
+//       if (cursor) {
+//         resultList.push(cursor.value);
+//         cursor.continue();
+//       } else {
+//         resolve(resultList);
+//       }
+//     };
+//   });
+// }
 
 //////// MODEL: CSV FUNCTIONS ////////
 function createCsvContent(dataObjectArr) {
