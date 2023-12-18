@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Display Weapon Bonus in Auction House + Highlight
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.2
+// @version      1.1.0
 // @description  Displays weapon bonuses + stats next to weapon name in auction house
 // @author       Ironhydedragon
 // @match        https://www.torn.com/amarket.php*
@@ -147,6 +147,13 @@ const stylesheet = `
     p.display-bonus__bonus {
       display: inline-block;
       padding-right: 4px;
+    }
+
+    .display-bonus .item-bonuses .iconsbonuses span:nth-of-type(1) i{
+      transform: scale(2) translate(-2px, 2px);
+    }
+    .display-bonus .item-bonuses .iconsbonuses span:nth-of-type(2) i{
+      transform: scale(2) translate(-6px, 2px);
     }
   </style>
 `;
