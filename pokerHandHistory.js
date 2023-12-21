@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Poker Hand History
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.2.0
+// @version      1.2.1
 // @description  Tracks your poker hand history from current session and allows your to copy to clipboard(PDA) and download as csv
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/page.php?sid=holdem*
@@ -57,6 +57,7 @@ function renderTitleContentStylesheet() {
     #hand-history-content-title span {
       display: flex;
       align-items: center;
+      cursor: pointer;
     }
     #hand-history-content-title span:hover {
       color: #444;
