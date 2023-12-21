@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Poker Hand History
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.1.0
+// @version      1.2.0
 // @description  Tracks your poker hand history from current session and allows your to copy to clipboard(PDA) and download as csv
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/page.php?sid=holdem*
@@ -316,6 +316,15 @@ function renderModal() {
   document.body.insertAdjacentHTML('afterbegin', modalHTML);
 }
 
+function renderModalNumEntries(number) {
+  document.querySelector('.hand-history-modal__entries-number').textContent = number;
+}
+
+function renderModalInputValue(textContent) {
+  const modalInput = document.querySelector('.hand-history-modal__textarea-input');
+  modalInput.value = textContent;
+}
+
 // //////// MODEL: INDEXED DB ////////
 function dbOpen() {
   // Open database
@@ -326,7 +335,7 @@ function dbOpen() {
 
     // Create an objectStore for this database
     if (!db.objectStoreNames.contains('messageStore')) {
-      console.log('PokerHistory: initIndexDB open onupgradeneeded create store');
+      console.log('PokerHandHistoryDB: creating message Store...');
       const objectStore = db.createObjectStore('messageStore', { keyPath: 'autoId', autoIncrement: true });
     }
   };
@@ -402,10 +411,10 @@ function dbClearAll() {
   const storeRequest = messageStore.clear();
 
   storeRequest.onsuccess = () => {
-    console.log('cleared database'); // TEST
+    // console.log('cleared database'); // TEST
   };
   storeRequest.onerror = (e) => {
-    console.log('clear db error', e); // TEST
+    console.error('clear db error', e); // TEST
   };
 }
 
@@ -413,6 +422,8 @@ function dbClearAll() {
 function createCsvContent(dataObjectArr) {
   let rows = [];
 
+  if (dataObjectArr.length === 0) return 'No Entries found';
+  console.log(dataObjectArr); // TEST
   const first = Object.keys(dataObjectArr)[0];
   const headerRow = Object.keys(dataObjectArr[first]);
 
@@ -483,6 +494,10 @@ function closeModalClickHandler() {
 function deleteClickHandler() {
   console.log('delte click handler'); // TEST
   dbClearAll();
+
+  if (document.querySelector('#hand-history-modal')) {
+    renderModalInputValue('Database Cleared!');
+  }
 }
 
 async function peekClickHandler() {
@@ -491,10 +506,10 @@ async function peekClickHandler() {
   renderModal();
   const handHistory = await dbReadAll();
   const csvContent = createCsvContent(handHistory);
-  document.querySelector('.hand-history-modal__entries-number').textContent = handHistory.length;
 
-  const modalInput = document.querySelector('.hand-history-modal__textarea-input');
-  modalInput.value = csvContent;
+  renderModalNumEntries(handHistory.length);
+
+  renderModalInputValue(csvContent);
 
   document.querySelector('#hand-history-modal .hand-history-modal__textarea-copy').addEventListener('click', copyClickHandler);
   document.querySelector('#hand-history-modal .hand-history-modal__textarea-delete').addEventListener('click', deleteClickHandler);
