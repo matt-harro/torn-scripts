@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Poker Hand History
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.3
+// @version      1.1.0
 // @description  Tracks your poker hand history from current session and allows your to copy to clipboard(PDA) and download as csv
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/page.php?sid=holdem*
@@ -9,7 +9,6 @@
 // ==/UserScript==
 
 let db;
-let handHistory = [];
 
 //////// UTIL: GENERAL FUNCTIONS ////////
 async function requireElement(selectors, conditionsCallback) {
@@ -65,6 +64,10 @@ function renderTitleContentStylesheet() {
     .dark-mode #hand-history-content-title span:hover {
       color: #fff;
     }
+    #hand-history-content-title .hand-history__delete svg {
+      height: 16px;
+      transform: translateY(-1px);
+    }
     #hand-history-content-title svg {
       width: 20px; 
       height: 20px; 
@@ -89,6 +92,25 @@ function renderTitleContent() {
   const handHistoryHTML = `
     <div id="hand-history-content-title" class="hand-history">
       Poker Hand History
+      <span class="hand-history__delete">
+        <svg viewBox="-3 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+              <defs></defs>
+              <g id="Page-1" stroke="none" stroke-width="1" fill-rule="evenodd" sketch:type="MSPage">
+                <g id="Icon-Set-Filled" sketch:type="MSLayerGroup" transform="translate(-261.000000, -205.000000)">
+                  <path
+                    d="M268,220 C268,219.448 268.448,219 269,219 C269.552,219 270,219.448 270,220 L270,232 C270,232.553 269.552,233 269,233 C268.448,233 268,232.553 268,232 L268,220 L268,220 Z M273,220 C273,219.448 273.448,219 274,219 C274.552,219 275,219.448 275,220 L275,232 C275,232.553 274.552,233 274,233 C273.448,233 273,232.553 273,232 L273,220 L273,220 Z M278,220 C278,219.448 278.448,219 279,219 C279.552,219 280,219.448 280,220 L280,232 C280,232.553 279.552,233 279,233 C278.448,233 278,232.553 278,232 L278,220 L278,220 Z M263,233 C263,235.209 264.791,237 267,237 L281,237 C283.209,237 285,235.209 285,233 L285,217 L263,217 L263,233 L263,233 Z M277,209 L271,209 L271,208 C271,207.447 271.448,207 272,207 L276,207 C276.552,207 277,207.447 277,208 L277,209 L277,209 Z M285,209 L279,209 L279,207 C279,205.896 278.104,205 277,205 L271,205 C269.896,205 269,205.896 269,207 L269,209 L263,209 C261.896,209 261,209.896 261,211 L261,213 C261,214.104 261.895,214.999 262.999,215 L285.002,215 C286.105,214.999 287,214.104 287,213 L287,211 C287,209.896 286.104,209 285,209 L285,209 Z"
+                    id="trash"
+                    sketch:type="MSShapeGroup"
+                  ></path>
+                </g>
+              </g>
+            </g>
+          </svg>
+        Delete History
+      </span>
       <span class="hand-history__csv">
         <svg viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/">
           <g id="SVGRepo_iconCarrier">
@@ -96,7 +118,8 @@ function renderTitleContent() {
             <path id="download" d="M48.089,52.095l0,4l-32.049,0l0,-4l32.049,0Zm-16.025,-4l-16.024,-16l8.098,0l-0.049,-24l15.975,0l0.048,24l7.977,0l-16.025,16Z"></path>
           </g>
         </svg>
-        Export CSV</span>
+        Export CSV
+      </span>
       <span class="hand-history__peek">
         <svg viewBox="-4.8 -4.8 57.60 57.60" xmlns="http://www.w3.org/2000/svg">
           <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
@@ -185,6 +208,13 @@ function renderModalStylesheet() {
         background: #000;
         color: #ddd;
       }
+      #hand-history-modal .hand-history-modal__entries {
+        position: absolute;
+        top: -1rem;
+        left: 0;
+        font-weight: bold;
+      }
+
       #hand-history-modal .hand-history-modal__textarea-input {
         box-sizing: border-box;
         width: 100%;
@@ -199,11 +229,18 @@ function renderModalStylesheet() {
        top: 10px;
        right: 10px;
       }
+      #hand-history-modal .hand-history-modal__textarea-delete {
+       position: absolute;
+       top: 10px;
+       right: 50px;
+
+      }
       #hand-history-modal svg {
         height: 20px;
         width: 20px;
         fill: #666;
       }
+      #hand-history-modal .hand-history-modal__textarea-delete:hover svg,
       #hand-history-modal .hand-history-modal__textarea-copy:hover svg,
       #hand-history-modal .hand-history-modal__overlay-close:hover svg {
         fill: #444;
@@ -212,6 +249,7 @@ function renderModalStylesheet() {
       .dark-mode #hand-history-modal svg {
         fill: #999
       }
+      .dark-mode #hand-history-modal .hand-history-modal__textarea-delete:hover svg,
       .dark-mode #hand-history-modal .hand-history-modal__textarea-copy:hover svg,
       .dark-mode #hand-history-modal .hand-history-modal__overlay-close:hover svg {
         fill: #fff;
@@ -225,21 +263,40 @@ function renderModal() {
     <div id="hand-history-modal" class="hand-history-modal">
       <div class="hand-history-modal__overlay"></div>
       <div class="hand-history-modal__textarea">
+        <div class="hand-history-modal__entries"><span class="hand-history-modal__entries-number">#</span> Entries found</div>
         <div class="hand-history-modal__overlay-close">
-        <svg width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g id="SVGRepo_iconCarrier">
-            <path
-              d="M8.00386 9.41816C7.61333 9.02763 7.61334 8.39447 8.00386 8.00395C8.39438 7.61342 9.02755 7.61342 9.41807 8.00395L12.0057 10.5916L14.5907 8.00657C14.9813 7.61605 15.6144 7.61605 16.0049 8.00657C16.3955 8.3971 16.3955 9.03026 16.0049 9.42079L13.4199 12.0058L16.0039 14.5897C16.3944 14.9803 16.3944 15.6134 16.0039 16.0039C15.6133 16.3945 14.9802 16.3945 14.5896 16.0039L12.0057 13.42L9.42097 16.0048C9.03045 16.3953 8.39728 16.3953 8.00676 16.0048C7.61624 15.6142 7.61624 14.9811 8.00676 14.5905L10.5915 12.0058L8.00386 9.41816Z"
-            ></path>
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M23 12C23 18.0751 18.0751 23 12 23C5.92487 23 1 18.0751 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12ZM3.00683 12C3.00683 16.9668 7.03321 20.9932 12 20.9932C16.9668 20.9932 20.9932 16.9668 20.9932 12C20.9932 7.03321 16.9668 3.00683 12 3.00683C7.03321 3.00683 3.00683 7.03321 3.00683 12Z"
-            ></path>
-          </g>
-        </svg>
+          <svg width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g id="SVGRepo_iconCarrier">
+              <path
+                d="M8.00386 9.41816C7.61333 9.02763 7.61334 8.39447 8.00386 8.00395C8.39438 7.61342 9.02755 7.61342 9.41807 8.00395L12.0057 10.5916L14.5907 8.00657C14.9813 7.61605 15.6144 7.61605 16.0049 8.00657C16.3955 8.3971 16.3955 9.03026 16.0049 9.42079L13.4199 12.0058L16.0039 14.5897C16.3944 14.9803 16.3944 15.6134 16.0039 16.0039C15.6133 16.3945 14.9802 16.3945 14.5896 16.0039L12.0057 13.42L9.42097 16.0048C9.03045 16.3953 8.39728 16.3953 8.00676 16.0048C7.61624 15.6142 7.61624 14.9811 8.00676 14.5905L10.5915 12.0058L8.00386 9.41816Z"
+              ></path>
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M23 12C23 18.0751 18.0751 23 12 23C5.92487 23 1 18.0751 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12ZM3.00683 12C3.00683 16.9668 7.03321 20.9932 12 20.9932C16.9668 20.9932 20.9932 16.9668 20.9932 12C20.9932 7.03321 16.9668 3.00683 12 3.00683C7.03321 3.00683 3.00683 7.03321 3.00683 12Z"
+              ></path>
+            </g>
+          </svg>
       </div>
         <textarea class="hand-history-modal__textarea-input"></textarea>
+        <span class="hand-history-modal__textarea-delete">
+          <svg width="64px" height="64px" viewBox="-3 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+              <defs></defs>
+              <g id="Page-1" stroke="none" stroke-width="1" fill-rule="evenodd" sketch:type="MSPage">
+                <g id="Icon-Set-Filled" sketch:type="MSLayerGroup" transform="translate(-261.000000, -205.000000)">
+                  <path
+                    d="M268,220 C268,219.448 268.448,219 269,219 C269.552,219 270,219.448 270,220 L270,232 C270,232.553 269.552,233 269,233 C268.448,233 268,232.553 268,232 L268,220 L268,220 Z M273,220 C273,219.448 273.448,219 274,219 C274.552,219 275,219.448 275,220 L275,232 C275,232.553 274.552,233 274,233 C273.448,233 273,232.553 273,232 L273,220 L273,220 Z M278,220 C278,219.448 278.448,219 279,219 C279.552,219 280,219.448 280,220 L280,232 C280,232.553 279.552,233 279,233 C278.448,233 278,232.553 278,232 L278,220 L278,220 Z M263,233 C263,235.209 264.791,237 267,237 L281,237 C283.209,237 285,235.209 285,233 L285,217 L263,217 L263,233 L263,233 Z M277,209 L271,209 L271,208 C271,207.447 271.448,207 272,207 L276,207 C276.552,207 277,207.447 277,208 L277,209 L277,209 Z M285,209 L279,209 L279,207 C279,205.896 278.104,205 277,205 L271,205 C269.896,205 269,205.896 269,207 L269,209 L263,209 C261.896,209 261,209.896 261,211 L261,213 C261,214.104 261.895,214.999 262.999,215 L285.002,215 C286.105,214.999 287,214.104 287,213 L287,211 C287,209.896 286.104,209 285,209 L285,209 Z"
+                    id="trash"
+                    sketch:type="MSShapeGroup"
+                  ></path>
+                </g>
+              </g>
+            </g>
+          </svg>
+        </span>
         <span class="hand-history-modal__textarea-copy">
            <svg width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
@@ -260,60 +317,97 @@ function renderModal() {
 }
 
 // //////// MODEL: INDEXED DB ////////
-function openDB() {
+function dbOpen() {
   // Open database
-  const request = window.indexedDB.open('pokerHandHistoryDB', 1);
-  request.onerror = (event) => {
-    console.error('indexedDB request error: ', event); // TEST
+  const request = window.indexedDB.open('pokerHandHistoryDB', 2);
+  request.onupgradeneeded = (event) => {
+    // Save the IDBDatabase interface
+    const db = event.target.result;
+
+    // Create an objectStore for this database
+    if (!db.objectStoreNames.contains('messageStore')) {
+      console.log('PokerHistory: initIndexDB open onupgradeneeded create store');
+      const objectStore = db.createObjectStore('messageStore', { keyPath: 'autoId', autoIncrement: true });
+    }
   };
+
   request.onsuccess = (event) => {
-    console.log('indexedDB request success: ', event); // TEST
+    // console.log('indexedDB open success: ', event); // TEST
     db = event.target.result;
   };
+  request.onerror = (event) => {
+    console.error('indexedDB open error: ', event); // TEST
+  };
 }
-openDB();
 
-// request.onupgradeneeded = (event) => {
-//   // Save the IDBDatabase interface
-//   const db = event.target.result;
+function dbWrite(message) {
+  if (!db || !message) return;
 
-//   // Create an objectStore for this database
-//   if (!db.objectStoreNames.contains('messageStore')) {
-//     console.log('PokerHistory: initIndexDB open onupgradeneeded create store');
-//     const objectStore = db.createObjectStore('messageStore', { keyPath: 'autoId', autoIncrement: true });
-//   }
-// };
+  const transaction = db.transaction(['messageStore'], 'readwrite');
+  transaction.oncomplete = (e) => {
+    // console.log('dbWrite Completed');
+  };
+  transaction.onerror = (event) => {
+    console.error('dbWrite Unsuccessful');
+  };
 
-// function dbReadAll() {
-//   if (!db) {
-//     console.error('PokerHistory: dbReadAll db is null');
-//   }
+  const messageStore = transaction.objectStore('messageStore');
+  const request = messageStore.put(message);
+  request.onsuccess = (e) => {
+    // console.log(`dbWrite: ${message} added to messageStore`); // TEST
+  };
+  request.onerror = (e) => {
+    console.error(e);
+  };
+}
 
-//   const transaction = db.transaction(['messageStore'], 'readonly');
-//   transaction.oncomplete = (event) => {
-//     console.log('PokerHistory: dbReadAll transaction oncomplete');
-//   };
-//   transaction.onerror = (event) => {
-//     console.error('PokerHistory: dbReadAll transaction onerror');
-//   };
+function dbReadAll() {
+  if (!db) {
+    console.error('dbReadAll db is null');
+  }
 
-//   const store = transaction.objectStore('messageStore');
-//   return new Promise((resolve, reject) => {
-//     const resultList = [];
-//     store.openCursor().onerror = (event) => {
-//       resolve(resultList);
-//     };
-//     store.openCursor().onsuccess = (event) => {
-//       const cursor = event.target.result;
-//       if (cursor) {
-//         resultList.push(cursor.value);
-//         cursor.continue();
-//       } else {
-//         resolve(resultList);
-//       }
-//     };
-//   });
-// }
+  const transaction = db.transaction('messageStore', 'readonly');
+  transaction.oncomplete = (event) => {
+    // console.log('dbReadAll transaction completed'); // TEST
+  };
+  transaction.onerror = (event) => {
+    console.error('dbReadAll transaction error');
+  };
+
+  const messageStore = transaction.objectStore('messageStore');
+  return new Promise((resolve, reject) => {
+    const resultList = [];
+    messageStore.openCursor().onerror = (event) => {
+      resolve(resultList);
+    };
+    messageStore.openCursor().onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        resultList.push(cursor.value);
+        cursor.continue();
+      } else {
+        resolve(resultList);
+      }
+    };
+  });
+}
+
+function dbClearAll() {
+  if (!db) {
+    console.error('dbClearAll db is null');
+  }
+
+  const transaction = db.transaction('messageStore', 'readwrite');
+  const messageStore = transaction.objectStore('messageStore');
+  const storeRequest = messageStore.clear();
+
+  storeRequest.onsuccess = () => {
+    console.log('cleared database'); // TEST
+  };
+  storeRequest.onerror = (e) => {
+    console.log('clear db error', e); // TEST
+  };
+}
 
 //////// MODEL: CSV FUNCTIONS ////////
 function createCsvContent(dataObjectArr) {
@@ -343,11 +437,18 @@ function downloadCsv(data) {
   a.click();
 }
 
-function handHistoryCallback(mustationList, observer) {
-  for (const mutation of mustationList) {
+function handHistoryCallback(mutationList, observer) {
+  if (mutationList.length >= 40) return;
+
+  for (const mutation of mutationList) {
     if (mutation.addedNodes.length > 0) {
       const handLog = `"${mutation.addedNodes[0].innerText}\"`;
-      handHistory.push({ log: handLog });
+
+      let message = {
+        timestamp: new Date().getTime() / 1000,
+        text: handLog,
+      };
+      dbWrite(message);
     }
   }
 }
@@ -361,48 +462,63 @@ function handHistoryObserver() {
   });
 }
 
-//////// MODEL: DB FUNCTIONS ////////
-
-function initController() {
-  renderTitleContentStylesheet();
-  renderModalStylesheet();
-}
-
-/////// CONTROLLERS ////////
-function csvClickHandler() {
+//////// CONTROLLERS: FUNCTIONS ////////
+async function csvClickHandler() {
+  const handHistory = await dbReadAll();
   const csvContent = createCsvContent(handHistory);
+  // console.log(csvContent); // TEST
 
-  console.log('✋', handHistory); // TEST
   downloadCsv(csvContent);
-
-  handHistory = [];
 }
 
-function copyHandHistory() {
-  console.log('copy'); // TEST
+function copyClickHandler() {
+  const modalTextArea = document.querySelector('.hand-history-modal__textarea-input');
+  navigator.clipboard.writeText(modalTextArea.value);
 }
 
-function closeModal() {
+function closeModalClickHandler() {
   document.querySelector('#hand-history-modal').remove();
 }
 
-function peekClickHandler() {
-  if (document.querySelector('#hand-history-modal')) return;
-  renderModal();
+function deleteClickHandler() {
+  console.log('delte click handler'); // TEST
+  dbClearAll();
+}
 
-  document.querySelector('#hand-history-modal .hand-history-modal__textarea-copy').addEventListener('click', copyHandHistory);
-  document.querySelector('#hand-history-modal .hand-history-modal__overlay').addEventListener('click', closeModal);
-  document.querySelector('#hand-history-modal .hand-history-modal__overlay-close').addEventListener('click', closeModal);
+async function peekClickHandler() {
+  if (document.querySelector('#hand-history-modal')) return;
+
+  renderModal();
+  const handHistory = await dbReadAll();
+  const csvContent = createCsvContent(handHistory);
+  document.querySelector('.hand-history-modal__entries-number').textContent = handHistory.length;
+
+  const modalInput = document.querySelector('.hand-history-modal__textarea-input');
+  modalInput.value = csvContent;
+
+  document.querySelector('#hand-history-modal .hand-history-modal__textarea-copy').addEventListener('click', copyClickHandler);
+  document.querySelector('#hand-history-modal .hand-history-modal__textarea-delete').addEventListener('click', deleteClickHandler);
+  document.querySelector('#hand-history-modal .hand-history-modal__overlay').addEventListener('click', closeModalClickHandler);
+  document.querySelector('#hand-history-modal .hand-history-modal__overlay-close').addEventListener('click', closeModalClickHandler);
+}
+
+/////// CONTROLLERS ////////
+function initController() {
+  renderTitleContentStylesheet();
+  renderModalStylesheet();
+  dbOpen();
 }
 
 async function titleContentController() {
   await requireElement('.content-title');
   renderTitleContent();
+  document.querySelector('.hand-history__delete').addEventListener('click', deleteClickHandler);
   document.querySelector('.hand-history__csv').addEventListener('click', csvClickHandler);
+  document.querySelector('.hand-history__peek').addEventListener('click', peekClickHandler);
 }
 
 function modalController() {
-  document.querySelector('.hand-history__peek').addEventListener('click', peekClickHandler);
+  document.querySelector('copy');
 }
 
 (async () => {
@@ -413,7 +529,6 @@ function modalController() {
     modalController();
     await requireElement('.messagesWrap___tBx9u');
     handHistoryObserver();
-    csvClickHandler();
   } catch (error) {
     console.error(error);
   }
