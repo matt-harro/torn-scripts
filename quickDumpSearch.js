@@ -91,6 +91,6 @@ async function quickSearchController() {
   console.log('🗑️ Quick dump search script is ON!'); // TEST
   document.addEventListener('load', (e) => {
     console.log(e); // TEST
-  })
+  });
   quickSearchController();
 })();
