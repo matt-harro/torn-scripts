@@ -32,7 +32,7 @@ const GLOBAL_STATE = {
         status: ['Okay'], // Possible options are: ['Okay', 'Hospital', 'Travelling', 'Jail'] ### CASE SENSITIVE ###
         onOffIdle: ['offline'], // Possible options are: ['online', 'idle', 'offline']
         levelRange: [0, 100], // first number is lower level range, second number is higher level range
-        includeExceptions: [], // array of players names (not case sensitive) that are OUTSIDE the level range you wish TO highlight, if they meet the other criteria
+        includeExceptions: ['Keelosncreme', 'AnGora', 'GodSaten', 'DevilsHypocrite', 'Aeropixel'], // array of players names (not case sensitive) that are OUTSIDE the level range you wish TO highlight, if they meet the other criteria
         excludeExceptions: [], // array of players that are INSIDE the level range you wish NOT TO highlight, if they meet the other criteria
       },
 
@@ -40,9 +40,9 @@ const GLOBAL_STATE = {
         // DEFAULT ORANGE: ALL PLAYERS WITH OKAY & IDLE STATUSES
 
         status: ['Okay'], // Possible options are: ['Okay', 'Hospital', 'Travelling', 'Jail'] ### CASE SENSITIVE ###
-        onOffIdle: ['idle'], // Possible options are: ['online', 'idle', 'offline']
-        levelRange: [0, 100], // first number is lower level range, second number is higher level range
-        includeExceptions: [], // array of players that are OUTSIDE the level range you wish TO highlight, if they meet the other criteria
+        onOffIdle: ['online', 'idle', 'offline'], // Possible options are: ['online', 'idle', 'offline']
+        levelRange: [0, 0], // first number is lower level range, second number is higher level range
+        includeExceptions: ['Iam_Groot', 'Tiger_Claw', 'SilverBug', 'Loftaris', 'Mojo'], // array of players that are OUTSIDE the level range you wish TO highlight, if they meet the other criteria
         excludeExceptions: [], // array of players that are INSIDE the level range you wish NOT TO highlight, if they meet the other criteria
       },
 
