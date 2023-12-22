@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Display Crime Chain
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.3
+// @version      1.0.4
 // @description  Calculates and displays your current crime chain
 // @author       Ironhydedragon[2428902]
 // @match        https://www.torn.com/loader.php?sid=crimes*
@@ -116,7 +116,7 @@ function renderApiForm() {
           <a href="#" id="api-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
         </div>
       </div>`;
-
+  if (document.querySelector('#api-form')) return;
   topHeaderBannerEl.insertAdjacentHTML('afterbegin', apiFormHTML);
 }
 function dismountApiForm() {
