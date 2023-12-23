@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Poker Hand History
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.2.1
+// @version      1.2.2
 // @description  Tracks your poker hand history from current session and allows your to copy to clipboard(PDA) and download as csv
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/page.php?sid=holdem*
@@ -14,7 +14,7 @@ let db;
 async function requireElement(selectors, conditionsCallback) {
   try {
     await new Promise((res, rej) => {
-      maxCycles = 500;
+      const maxCycles = 500;
       let current = 1;
       const interval = setInterval(() => {
         if (document.querySelector(selectors)) {
