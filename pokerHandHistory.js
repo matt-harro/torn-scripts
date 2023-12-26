@@ -142,9 +142,9 @@ function renderTitleContent() {
   titleEl.insertAdjacentHTML('afterend', handHistoryHTML);
 }
 
-// function peekClickHandler() {
-  //renderModalStylesheet();
-//}
+function peekClickHandler() {
+  renderModalStylesheet();
+}
 
 //////// VIEW: MODAL ////////
 function renderModalStylesheet() {
