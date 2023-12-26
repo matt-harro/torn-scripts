@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Prefill Item Send
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.0
+// @version      1.0.1
 // @description  Allows Prefill values to be set for amounts and players
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/item.php*
@@ -33,12 +33,16 @@ function amountClickHandler(e) {
   if (++amountIndex > max) amountIndex = 0;
 
   prefillAmount(e.target);
+  e.target.focus();
+  e.target.select();
 }
 function playerClickHandler(e) {
   const max = prefillPlayerVal.length - 1;
   if (++playerIndex > max) playerIndex = 0;
 
   prefillPlayer(e.target);
+  e.target.focus();
+  e.target.select();
 }
 
 async function sendItemObserverCallback(mutationList, observer) {
