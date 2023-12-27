@@ -1,0 +1,102 @@
+// ==UserScript==
+// @name         TORN: Prefill Max Buy Bazaar
+// @namespace    http://torn.city.com.dot.com.com
+// @version      1.0.0
+// @description  Prefills the bazaar buy to the max possible
+// @author       IronHydeDragon[2428902]
+// @match        https://www.torn.com/bazaar.php*
+// @license      MIT
+// ==/UserScript==
+
+async function requireElement(selectors, conditionsCallback) {
+  try {
+    await new Promise((res, rej) => {
+      const maxCycles = 500;
+      let current = 1;
+      const interval = setInterval(() => {
+        if (document.querySelector(selectors)) {
+          if (conditionsCallback === undefined) {
+            clearInterval(interval);
+            return res();
+          }
+          if (conditionsCallback(document.querySelector(selectors))) {
+            clearInterval(interval);
+            return res();
+          }
+        }
+        if (current === maxCycles) {
+          clearInterval(interval);
+          rej('Timeout: Could not find element on page');
+        }
+        current++;
+      }, 10);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function getMoneyOnHand() {
+  await requireElement('#user-money');
+  const onhand = +document.querySelector('#user-money').dataset.money;
+
+  return onhand;
+}
+
+async function prefillMaxAmount(inputEl, price) {
+  const onhand = await getMoneyOnHand();
+  if (onhand === 0) {
+    inputEl.value = 0;
+  }
+
+  if (onhand > 0) {
+    const maxAmount = Math.floor(onhand / +price);
+    inputEl.value = maxAmount;
+  }
+
+  inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+async function bazaarObserver(mutationList, observer) {
+  for (const mutation of mutationList) {
+    // if (
+    //   !mutation.target.classList.contains('progress-line-timer___uV1ZZ') &&
+    //   !mutation.target.classList.contains('news-ticker-slide') &&
+    //   !mutation.target.classList.contains('progress___z5tk3') &&
+    //   mutation.target.id !== 'news-ticker-slider-wrapper'
+    // ) {
+    //   // console.log('👀', mutation); // TEST
+    // }
+
+    if (
+      mutation.target.classList.contains('item___GYCYJ') &&
+      mutation.addedNodes?.length > 0 &&
+      mutation.addedNodes[0].classList.contains('buyMenu___PJqGH')
+    ) {
+      const amountInput = mutation.target.querySelector(
+        '.buyAmountInput___CSV2n'
+      );
+      const price = mutation.target
+        .querySelector('.price___q9kzH')
+        .textContent.slice(1)
+        .split(',')
+        .join('');
+      prefillMaxAmount(amountInput, price);
+      console.log(mutation); // TEST
+    }
+  }
+}
+
+function createBazaarObserver() {
+  const observer = new MutationObserver(bazaarObserver);
+  observer.observe(document, {
+    attributes: false,
+    childList: true,
+    subtree: true,
+  });
+}
+
+(async () => {
+  console.log('🤑 Prefill max buy bazaar script is ON!'); // TEST
+  createBazaarObserver();
+})();
