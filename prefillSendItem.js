@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Prefill Item Send
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.1.0
+// @version      1.1.1
 // @description  Allows Prefill values to be set for amounts and players
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/item.php*
@@ -9,9 +9,9 @@
 // ==/UserScript==
 
 //////// PREFILL VALUES ////////
-const prefillAmountVal = ['2', '5', '999999']; // 999999 is just some rediculous number that should be equivalent to 'max'
-const prefillPlayerVal = ['Zwiepy [2902922]', 'Kv0the [2153277]'];
-const prefillMessageVal = ['Script testing', 'Also script testing'];
+const prefillAmountVal = ['2', '5', '999999', '']; // 999999 is just some rediculous number that should be equivalent to 'max'
+const prefillPlayerVal = ['Kv0the [2153277]', ''];
+const prefillMessageVal = ['Edit script message prefills', ''];
 
 //////// INDEXES USED BY FUNCTIONS
 // DO NOT CHANGE
