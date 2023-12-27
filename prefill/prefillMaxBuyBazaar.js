@@ -1,25 +1,32 @@
 // ==UserScript==
 // @name         TORN: Prefill Max Buy Bazaar
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.0
+// @version      1.0.1
 // @description  Prefills the bazaar buy to the max possible
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/bazaar.php*
 // @license      MIT
 // ==/UserScript==
 
-async function requireElement(selectors, conditionsCallback) {
+async function requireElement(
+  selectors,
+  conditionsCallback,
+  queryElement = document
+) {
   try {
     await new Promise((res, rej) => {
       const maxCycles = 500;
       let current = 1;
       const interval = setInterval(() => {
-        if (document.querySelector(selectors)) {
-          if (conditionsCallback === undefined) {
+        if (queryElement.querySelector(selectors)) {
+          if (!conditionsCallback) {
             clearInterval(interval);
             return res();
           }
-          if (conditionsCallback(document.querySelector(selectors))) {
+          if (
+            conditionsCallback &&
+            conditionsCallback(queryElement.querySelector(selectors))
+          ) {
             clearInterval(interval);
             return res();
           }
@@ -43,15 +50,18 @@ async function getMoneyOnHand() {
   return onhand;
 }
 
-async function prefillMaxAmount(inputEl, price) {
+async function prefillMaxAmount(inputEl, price, qtyAvailable) {
+  price = +price;
+  qtyAvailable = +qtyAvailable;
+
   const onhand = await getMoneyOnHand();
   if (onhand === 0) {
     inputEl.value = 0;
   }
 
   if (onhand > 0) {
-    const maxAmount = Math.floor(onhand / +price);
-    inputEl.value = maxAmount;
+    const maxAmount = Math.floor(onhand / price);
+    inputEl.value = maxAmount > qtyAvailable ? qtyAvailable : maxAmount;
   }
 
   inputEl.dispatchEvent(new Event('input', { bubbles: true }));
@@ -81,7 +91,15 @@ async function bazaarObserver(mutationList, observer) {
         .textContent.slice(1)
         .split(',')
         .join('');
-      prefillMaxAmount(amountInput, price);
+
+      await requireElement('.amount___jF6kC', null, mutation.target);
+      const qtyAvailable = mutation.target
+        .querySelector('.amount___jF6kC')
+        .textContent.match(/(\d.*\d|\d)/)[0]
+        .split(',')
+        .join('');
+
+      prefillMaxAmount(amountInput, price, qtyAvailable);
       console.log(mutation); // TEST
     }
   }

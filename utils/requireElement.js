@@ -1,15 +1,22 @@
-async function requireElement(selectors, conditionsCallback) {
+async function requireElement(
+  selectors,
+  conditionsCallback,
+  queryElement = document
+) {
   try {
     await new Promise((res, rej) => {
       const maxCycles = 500;
       let current = 1;
       const interval = setInterval(() => {
-        if (document.querySelector(selectors)) {
-          if (conditionsCallback === undefined) {
+        if (queryElement.querySelector(selectors)) {
+          if (!conditionsCallback) {
             clearInterval(interval);
             return res();
           }
-          if (conditionsCallback(document.querySelector(selectors))) {
+          if (
+            conditionsCallback &&
+            conditionsCallback(queryElement.querySelector(selectors))
+          ) {
             clearInterval(interval);
             return res();
           }
