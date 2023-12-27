@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Prefill Max Buy Bazaar
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.1
+// @version      1.0.2
 // @description  Prefills the bazaar buy to the max possible
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/bazaar.php*
@@ -57,14 +57,20 @@ async function prefillMaxAmount(inputEl, price, qtyAvailable) {
   const onhand = await getMoneyOnHand();
   if (onhand === 0) {
     inputEl.value = 0;
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
   }
 
   if (onhand > 0) {
     const maxAmount = Math.floor(onhand / price);
-    inputEl.value = maxAmount > qtyAvailable ? qtyAvailable : maxAmount;
+    inputEl.value =
+      maxAmount > qtyAvailable ? `${qtyAvailable}` : `${maxAmount}`;
   }
 
+  console.log(inputEl.value); // TEST
+
   inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+  // inputEl.dispatchEvent(new InputEvent('input'));
 }
 
 async function bazaarObserver(mutationList, observer) {
@@ -117,4 +123,5 @@ function createBazaarObserver() {
 (async () => {
   console.log('🤑 Prefill max buy bazaar script is ON!'); // TEST
   createBazaarObserver();
+  document.addEventListener('input', (e) => console.log(e)); // TEST)
 })();
