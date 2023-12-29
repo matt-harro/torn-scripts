@@ -51,11 +51,11 @@
 
     /* work with the cloned response in a separate promise
      chain -- could use the same chain with `await`. */
-    response
-      .clone()
-      .json()
-      .then((data) => console.log('intercepted response data:', args[0], data))
-      .catch((err) => console.error(err));
+    // response
+    //   .clone()
+    //   .json()
+    //   .then((data) => console.log('intercepted response data:', args[0], data))
+    //   .catch((err) => console.error(err));
 
     /* the original response can be resolved unmodified: */
     return response;
