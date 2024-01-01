@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         TORN: No Confirm Buy
+// @name         TORN: No Confirm Item Market
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.0
-// @description  Allows buying of items from item market and bazaars with 1-click
+// @version      1.0.1
+// @description  Allows buying items from item market with 1-click
 // @author       IronHydeDragon[2428902]
 // @match        https://www.torn.com/imarket.php*
 // @license      MIT
