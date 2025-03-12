@@ -72,7 +72,7 @@ function createObserver() {
 }
 
 (async () => {
-  console.log('👍 No confirm buy script is ON!');
+  console.log('👍 No confirm item market script is ON!');
   renderStylesheet();
   createObserver();
 })();
