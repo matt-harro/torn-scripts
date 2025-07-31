@@ -4,7 +4,7 @@
 // @version      1.0.4
 // @description  Calculates and displays your current crime chain
 // @author       Ironhydedragon[2428902]
-// @match        https://www.torn.com/loader.php?sid=crimes*
+// @match        https://www.torn.com/page.php?sid=crimes*
 // @license      MIT
 // @run-at       document-end
 // ==/UserScript==
