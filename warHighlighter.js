@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn War Highlighter - offline/idle & okay
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.1.1
+// @version      1.1.2
 // @description  Provide customizable sexy highlighting of war enemies in green, orange and red.
 // @author       Ironhydedragon
 // @match        https://www.torn.com/factions*
@@ -30,8 +30,8 @@ const GLOBAL_STATE = {
         // DEFAULT GREEN: ALL PLAYERS WITH OKAY & OFFLINE STATUSES
 
         status: ['Okay'], // Possible options are: ['Okay', 'Hospital', 'Travelling', 'Jail'] ### CASE SENSITIVE ###
-        onOffIdle: ['online', 'idle', 'offline'], // Possible options are: ['online', 'idle', 'offline']
-        levelRange: [0, 0], // first number is lower level range, second number is higher level range
+        onOffIdle: ['offline'], // Possible options are: ['online', 'idle', 'offline']
+        levelRange: [0, 100], // first number is lower level range, second number is higher level range
         includeExceptions: [], // array of players names (not case sensitive) that are OUTSIDE the level range you wish TO highlight, if they meet the other criteria
         excludeExceptions: [], // array of players that are INSIDE the level range you wish NOT TO highlight, if they meet the other criteria
       },
