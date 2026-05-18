@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN: Display Crime Chain
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.5
+// @version      1.0.6
 // @description  Calculates and displays your current crime chain
 // @author       Ironhydedragon[2428902]
 // @match        https://www.torn.com/page.php?sid=crimes*
@@ -171,7 +171,7 @@ async function calcCrimeChain() {
     const initialData = await fetchCrimes();
     function dataCollectorUnshifter(fetchData) {
       for (const log in fetchData.log) {
-        if (fetchData.log[log].title.match(/Crime (success|fail|critical fail)/gi)) {
+        if (fetchData.log[log].title.match(/Crime (success|fail|critical fail|item add)/gi)) {
           dataCollector.unshift(fetchData.log[log]);
         }
       }
