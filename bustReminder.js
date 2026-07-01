@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.12
+// @version      1.1.0
 // @description  Helps predicts how many jail busts you can make before the penalty jails you, adds a notification to the Jail icon. Adds a per-inmate "hardness" score to the jail list with a sortable easiest-first toggle. Works on desktop, mobile, and PDA.
 // @author       Adobi & Ironhydedragon
 // @author       RussianRob - updated the decay formula to be more accurately reflect Nosy’s formula. Added jail sort button
