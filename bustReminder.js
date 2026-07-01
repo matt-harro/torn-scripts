@@ -1,16 +1,17 @@
 // ==UserScript==
 // @name         BUSTR: Busting Reminder + PDA
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.11
-// @description  Guess how many busts you can do without getting jailed
+// @version      1.12
+// @description  Helps predicts how many jail busts you can make before the penalty jails you, adds a notification to the Jail icon. Adds a per-inmate "hardness" score to the jail list with a sortable easiest-first toggle. Works on desktop, mobile, and PDA.
 // @author       Adobi & Ironhydedragon
+// @author       RussianRob - updated the decay formula to be more accurately reflect Nosy’s formula. Added jail sort button
 // @match        https://www.torn.com/*
 // @license      MIT
 // @run-at       document-end
 // ==/UserScript==
-
-console.log('😎 BUSTR-SCRIPT ON!!!!'); // TEST
-
+ 
+console.log('😎 BUSTR 1.12 ON');
+ 
 ////////  GLOBAL VARIABLES
 ////  State
 let GLOBAL_BUSTR_STATE = {
@@ -24,6 +25,7 @@ let GLOBAL_BUSTR_STATE = {
     // quickBust: true,
     // quickBail: false,
     showHardnessScore: true, // set to 'false' to remove hardnessScore rendering and reordering
+    sortByHardness: true, // false = leave Torn's default order (descending time); toggle via the Hardness column header
   },
   penaltyScore: 0,
   penaltyThreshold: 0,
@@ -32,14 +34,14 @@ let GLOBAL_BUSTR_STATE = {
   lastFetchTimestampMs: 0,
   renderedView: undefined,
 };
-
+ 
 const PDA_API_KEY = '###PDA-APIKEY###';
 function isPDA() {
   const PDATestRegex = !/^(###).+(###)$/.test(PDA_API_KEY);
-
+ 
   return PDATestRegex;
 }
-
+ 
 ////  Colors
 const greenMossDark = '#4b5738';
 const greenMossDarkTranslucent = 'rgb(75, 87, 56, 0.9)';
@@ -47,49 +49,49 @@ const greenMoss = '#57693a';
 const greenMossTranslucent = 'rgb(87, 105, 58, 0.9)';
 const greenApple = '#85b200';
 const greenAppleTranslucent = 'rgba(134, 179, 0, 0.4)';
-
+ 
 const orangeFulvous = '#d08000';
 const orangeFulvousTranslucent = 'rgba(209, 129, 0, 0.3)';
 const orangeAmber = '#ffbf00';
 const orangeAmberTranslucent = 'rgba(255, 191, 0, 0.4)';
-
+ 
 const redFlame = '#e64d1a';
 const redFlameTranslucent = 'rgba(230, 77, 25, 0.3)';
 const redMelon = '#ffa8a8';
 const redMelonTranslucent = 'rgba(255, 168, 168, 0.3)';
 
+// Matches Torn's native nav notification dot (the blue badge on Gym etc.).
+// Gradient sampled from Torn's GYM notification dot: saturated medium blue body
+// darkening to a shadowed rim at the bottom.
+const tornNotifyBlue = 'linear-gradient(180deg, #5489c9 0%, #4278bd 50%, #37567d 100%)';
+ 
 ////  Utils Functions
-
+ 
 function createTimestampsArray(data) {
   let timestamps = [];
-
+ 
   for (const entry in data.log) {
     timestamps.push(data.log[entry].timestamp);
   }
-
+ 
   return timestamps;
 }
-
-function calcTenHours(hours) {
-  return hours / 7.2;
-}
-
+ 
 function calcPenaltyScore(timestampsArray) {
   const currentTime = Date.now() / 1000;
-
+ 
   let score = 0;
   let localScore = 0;
   for (const ts of timestampsArray) {
     const hours = (currentTime - ts) / 60 / 60;
-    const tenHours = calcTenHours(hours);
     if (hours <= 72) {
-      localScore = 128 / Math.pow(2, tenHours);
+      localScore = 128 / (1 + hours / 10);
       score += localScore;
     }
   }
   return Math.floor(score);
 }
-
+ 
 function calcPenaltyThreshold(timestampsArray) {
   if (getUserSettings().customPenaltyThreshold && typeof getUserSettings().customPenaltyThreshold === 'number') return getUserSettings().customPenaltyThreshold;
   const period = 24 * 60 * 60 * 3;
@@ -98,7 +100,7 @@ function calcPenaltyThreshold(timestampsArray) {
   let currentMin = timestampsArray[0];
   let currentMax = timestampsArray[0];
   let firstTimestamp;
-
+ 
   for (let i = 1; i < timestampsArray.length; i++) {
     const TS = timestampsArray[i];
     if (currentMin - TS <= period && currentMax - TS <= period) {
@@ -115,7 +117,7 @@ function calcPenaltyThreshold(timestampsArray) {
       currentMax = TS;
     }
   }
-
+ 
   let currentMaxScore = 0;
   for (let i = 0; i < timestampsArray.length - longestSequence; i++) {
     let score = 0;
@@ -123,27 +125,26 @@ function calcPenaltyThreshold(timestampsArray) {
     const initial_timestamp = timestampsArray[i];
     for (let j = 0; j < longestSequence; j++) {
       const hours = (initial_timestamp - timestampsArray[i + j]) / 60 / 60;
-      const tenHours = calcTenHours(hours);
-      localScore = 128 / Math.pow(2, tenHours);
+      localScore = 128 / (1 + hours / 10);
       score += localScore;
     }
     currentMaxScore = Math.max(currentMaxScore, score);
   }
   return Math.floor(currentMaxScore);
 }
-
+ 
 function calcAvailableBusts(penaltyScore, penaltyThreshold) {
   return Math.floor((penaltyThreshold - penaltyScore) / 128);
 }
-
+ 
 async function fetchBustsData(apiKey) {
   try {
     const url = `https://api.torn.com/user/?selections=log&log=5360&key=${apiKey}`;
-
+ 
     const response = await fetch(url);
     const data = await response.json();
-    setLastFecthTimestampMs();
-
+    setLastFetchTimestampMs();
+ 
     if (data.error) {
       if (data.error.error === 'Incorrect key' || data.error.error === 'Access level of this key is not high enough') {
         throw new Error(`Error: ${data.error.error}`);
@@ -155,46 +156,129 @@ async function fetchBustsData(apiKey) {
     console.error(err);
   }
 }
-
+ 
 function calcBustrStats(timestampsArray) {
   const penaltyScore = calcPenaltyScore(timestampsArray);
-
+ 
   const penaltyThreshold = calcPenaltyThreshold(timestampsArray);
-
+ 
   const availableBusts = calcAvailableBusts(penaltyScore, penaltyThreshold);
-
+ 
   return { penaltyScore, penaltyThreshold, availableBusts };
 }
-
+ 
 function getLevelJailDurationInfo(playerEl) {
   const levelEl = playerEl.querySelector('.level');
   const durationEl = playerEl.querySelector('.time');
-
+ 
   const level = +levelEl.innerText.match(/\d+/)[0];
   const hours = +durationEl.innerText.match(/\d+(?=h)/) || 0;
   const mins = +durationEl.innerText.match(/\d+(?=m)/) || 0;
   const durationInHours = hours + mins / 60;
-
+ 
   return [level, +durationInHours];
 }
-
+ 
 function calcHardnessScore(level, durationInHours) {
   return Math.floor(level * (durationInHours + 3));
 }
-
+ 
 function renderHardnessScore(playerEl, hardnessScore) {
   playerEl.querySelector('.bustr-hardness-score').textContent = hardnessScore;
 }
-
+ 
 function sortByHardnessScore(playerEl, hardnessScore) {
-  playerEl.style.order = hardnessScore;
+  // sortByHardness off → clear the flex order so rows fall back to Torn's
+  // default DOM order (descending time remaining).
+  playerEl.style.order = (getUserSettings().sortByHardness === false) ? '' : hardnessScore;
 }
-
+ 
+function renderSortToggleBar() {
+  const titleRow = document.querySelector('.users-list-title');
+  if (!titleRow) return;
+  const on = getUserSettings().sortByHardness !== false;
+  let bar = document.getElementById('bustr-sort-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'bustr-sort-bar';
+    bar.style.cssText = 'display:flex;align-items:center;gap:5px;margin:4px 0 7px;font-size:11px;user-select:none;';
+    titleRow.insertAdjacentElement('beforebegin', bar);
+  }
+  const pill = (active) => 'cursor:pointer;padding:2px 11px;border-radius:11px;font-weight:600;line-height:17px;'
+    + (active ? 'background:' + tornNotifyBlue + ';color:#fff;' : 'background:#2c2c2c;color:#9a9a9a;');
+  bar.innerHTML =
+    '<span style="color:#888;margin-right:3px;">Sort:</span>'
+    + '<span class="bustr-seg" data-on="1" style="' + pill(on) + '">Hardness</span>'
+    + '<span class="bustr-seg" data-on="0" style="' + pill(!on) + '">Default</span>';
+  bar.querySelectorAll('.bustr-seg').forEach((el) => {
+    el.addEventListener('click', () => {
+      const wantOn = el.dataset.on === '1';
+      if ((getUserSettings().sortByHardness !== false) === wantOn) return;
+      setUserSettings({ ...getUserSettings(), sortByHardness: wantOn });
+      reapplyHardnessOrder();
+      renderSortToggleBar();
+    });
+  });
+}
+ 
+function reapplyHardnessOrder() {
+  const on = getUserSettings().sortByHardness !== false;
+  for (const playerEl of document.querySelectorAll('ul.user-info-list-wrap > li')) {
+    if (playerEl.classList.contains('last')) continue;
+    if (!on) { playerEl.style.order = ''; continue; }
+    // Prefer the already-rendered hardness score; only fall back to
+    // re-parsing the DOM (regex on level/time) when it isn't present.
+    const scoreEl = playerEl.querySelector('.bustr-hardness-score');
+    const cached = scoreEl ? parseInt(scoreEl.textContent, 10) : NaN;
+    if (!Number.isNaN(cached)) {
+      playerEl.style.order = cached;
+      continue;
+    }
+    try {
+      const [level, durationInHours] = getLevelJailDurationInfo(playerEl);
+      playerEl.style.order = calcHardnessScore(level, durationInHours);
+    } catch (e) {}
+  }
+}
+ 
+function updateHardnessSortIndicator() {
+  const head = document.querySelector('.bustr-sort-toggle');
+  if (!head) return;
+  const on = getUserSettings().sortByHardness !== false;
+  const ind = head.querySelector('.bustr-sort-ind');
+  if (ind) {
+    // Inline pill on the SAME line as "Hardness" — a block/2nd-line badge gets
+    // clipped by the single-line jail header row (1.0.16 bug).
+    ind.textContent = on ? '▲' : '✕';
+    ind.style.cssText = 'display:inline-block;margin-left:4px;padding:0 5px;border-radius:7px;'
+      + 'font-size:11px;line-height:15px;font-weight:700;vertical-align:middle;cursor:pointer;'
+      + (on ? 'background:' + tornNotifyBlue + ';color:#fff;' : 'background:#888;color:#fff;');
+  }
+  head.title = on
+    ? 'Sorted by hardness (easiest at top) — click to use Torn default order (descending time)'
+    : "Torn default order (descending time) — click to sort by hardness (easiest first)";
+}
+ 
+function wireHardnessSortToggle() {
+  const head = document.querySelector('.bustr-sort-toggle');
+  if (!head || head.dataset.bustrWired) { updateHardnessSortIndicator(); return; }
+  head.dataset.bustrWired = '1';
+  head.style.cursor = 'pointer';
+  head.style.userSelect = 'none';
+  head.addEventListener('click', () => {
+    const on = getUserSettings().sortByHardness !== false;
+    setUserSettings({ ...getUserSettings(), sortByHardness: !on });
+    reapplyHardnessOrder();
+    updateHardnessSortIndicator();
+  });
+  updateHardnessSortIndicator();
+}
+ 
 //// Callback functions
 function submitFormCallback() {
   const inputEl = document.querySelector('#bustr-form__input');
   const submitBtnEl = document.querySelector('#bustr-form__submit');
-
+ 
   const apiKey = inputEl.value;
   if (apiKey.length !== 16) {
     inputEl.style.border = `2px solid ${redFlame}`;
@@ -205,7 +289,7 @@ function submitFormCallback() {
   dismountBustrForm();
   window.location.reload();
 }
-
+ 
 function inputValidatorCallback(event) {
   const inputEl = document.querySelector('#bustr-form__input');
   const submitBtnEl = document.querySelector('#bustr-form__submit');
@@ -217,7 +301,7 @@ function inputValidatorCallback(event) {
     submitBtnEl.disabled = true;
   }
 }
-
+ 
 async function successfulBustMutationCallback(mutationList, observer) {
   try {
     for (const mutation of mutationList) {
@@ -225,23 +309,23 @@ async function successfulBustMutationCallback(mutationList, observer) {
       if (mutation.target.innerText.match(/^(You busted ).+/) && mutation.removedNodes.length > 0) {
         observer.disconnect();
         console.log('SuccessfulBust', Date.now()); // TEST
-
+ 
         const newPenaltyScore = getPenaltyScore() + 128;
         setPenaltyScore(newPenaltyScore);
-
+ 
         const newAvailableBusts = calcAvailableBusts(getPenaltyScore(), getPenaltyThreshold());
         setAvailableBusts(newAvailableBusts);
         renderBustrStats({ availableBusts: getAvailableBusts(), penaltyScore: getPenaltyScore() });
-
+ 
         successfulBustUpdateController();
-        renderBustrColorClass();
+        renderBustrColorClass(getAvailableBusts());
       }
     }
   } catch (err) {
     console.error(err);
   }
 }
-
+ 
 function hardnessScoreCallback(mutationList, observer) {
   for (const mutation of mutationList) {
     if (mutation.target.classList.contains('user-info-list-wrap') && mutation.addedNodes.length > 1) {
@@ -250,31 +334,37 @@ function hardnessScoreCallback(mutationList, observer) {
     }
   }
 }
-
+ 
 //// Observers
+function getJailObserverTarget() {
+  // Scope the bust observer to the jail content area when present so the
+  // callback (which reads innerText → forces layout) fires far less often
+  // than watching the whole document. Falls back to document.
+  return document.querySelector('#mainContainer') || document.body || document;
+}
+ 
 function createJailMutationObserver() {
   const jailObserver = new MutationObserver(successfulBustMutationCallback);
-  jailObserver.observe(document, {
+  jailObserver.observe(getJailObserverTarget(), {
     attributes: false,
     childList: true,
     subtree: true,
   });
 }
-
+ 
 function createHardnessScoreObserver() {
   const harnessScoreObserver = new MutationObserver(hardnessScoreCallback);
-  harnessScoreObserver.observe(document, {
+  harnessScoreObserver.observe(getJailObserverTarget(), {
     attributes: false,
     childList: true,
     subtree: true,
   });
 }
-
+ 
 ////////  MODEL ////////
 ////  Getters and Setters
 function setGlobalBustrState(newState) {
   GLOBAL_BUSTR_STATE = { ...GLOBAL_BUSTR_STATE, ...newState };
-  localStorage.setItem('globalBustrState', JSON.stringify(GLOBAL_BUSTR_STATE));
   saveGlobalBustrState();
 }
 function getGlobalBustrState() {
@@ -302,55 +392,52 @@ function deleteGlobalBustrState() {
     availableBusts: 0,
     timestampsArray: [],
   };
-  localStorage.removeItem('bustrGlobalState');
+  localStorage.removeItem('globalBustrState');
 }
-
+ 
 function getMyViewportWidthType() {
-  let width = visualViewport.width;
-
-  if (width > 1000) return 'Desktop';
-  if (width < 1000 || width) return 'Mobile';
-  throw new Error('Visual viewport not loaded');
+  const width = visualViewport.width;
+  return width > 1000 ? 'Desktop' : 'Mobile';
 }
-
+ 
 function setApiKey(apiKey) {
   localStorage.setItem('bustrApiKey', JSON.stringify(apiKey));
 }
 function getApiKey() {
   if (isPDA()) return PDA_API_KEY;
-
+ 
   if (!localStorage.getItem('bustrApiKey')) return;
-
+ 
   return JSON.parse(localStorage.getItem('bustrApiKey'));
 }
-
+ 
 function deleteApiKey() {
   localStorage.removeItem('bustrApiKey');
 }
-
+ 
 function setUserSettings(newUserSettings, currentState) {
   currentState = currentState || getGlobalBustrState();
-
+ 
   const newState = { ...currentState, userSettings: newUserSettings };
   setGlobalBustrState(newState);
 }
 function getUserSettings() {
   return getGlobalBustrState().userSettings;
 }
-
+ 
 function setRenderedView(newRenderedView, currentState) {
   currentState = currentState || getGlobalBustrState();
-
+ 
   const newState = { ...currentState, renderedView: newRenderedView };
   setGlobalBustrState(newState);
 }
 function getRenderedView(newRenderedView, currentState) {
   return getGlobalBustrState().renderedView;
 }
-
+ 
 function setTimestampsArray(newTimestampsArr, currentState) {
   currentState = currentState || getGlobalBustrState();
-
+ 
   return setGlobalBustrState({
     ...currentState,
     timestampsArray: newTimestampsArr,
@@ -359,50 +446,50 @@ function setTimestampsArray(newTimestampsArr, currentState) {
 function getTimestampsArray() {
   return getGlobalBustrState().timestampsArray;
 }
-
-function setLastFecthTimestampMs(currentState) {
+ 
+function setLastFetchTimestampMs(currentState) {
   currentState = currentState || getGlobalBustrState();
-
+ 
   const currentTimestampMs = Date.now();
   setGlobalBustrState({
     ...currentState,
     lastFetchTimestampMs: currentTimestampMs,
   });
 }
-function getLastFecthTimestampMs() {
+function getLastFetchTimestampMs() {
   return getGlobalBustrState().lastFetchTimestampMs;
 }
-
+ 
 function setPenaltyThreshold(newPenaltyThreshold, currentState) {
   currentState = currentState || getGlobalBustrState();
-
+ 
   const newState = { ...currentState, penaltyThreshold: newPenaltyThreshold };
   setGlobalBustrState(newState);
 }
 function getPenaltyThreshold() {
   return getGlobalBustrState().penaltyThreshold;
 }
-
+ 
 function setPenaltyScore(newPenaltyScore, currentState) {
   currentState = currentState || getGlobalBustrState();
-
+ 
   const newState = { ...currentState, penaltyScore: newPenaltyScore };
   setGlobalBustrState(newState);
 }
 function getPenaltyScore() {
   return getGlobalBustrState().penaltyScore;
 }
-
+ 
 function setAvailableBusts(newAvailableBusts, currentState) {
   currentState = currentState || getGlobalBustrState();
-
+ 
   const newState = { ...currentState, availableBusts: newAvailableBusts };
   setGlobalBustrState(newState);
 }
 function getAvailableBusts() {
   return getGlobalBustrState().availableBusts;
 }
-
+ 
 ////////  VIEW  ////////
 ////  Stylesheet
 const bustrStylesheetHTML = `<style>
@@ -427,7 +514,7 @@ const bustrStylesheetHTML = `<style>
   .bustr--red .swiper-slide {
     --color: ${redMelon}
   }
-
+ 
   #bustr-form.header-wrapper-top {
     display: flex;
   }
@@ -437,14 +524,14 @@ const bustrStylesheetHTML = `<style>
     align-items: center;
     padding-left: 20px;
   }
-
+ 
   #bustr-form.header-wrapper-top h2 {
     display: block;
     text-align: center;
     margin: 0;
     width: 172px;
   }
-
+ 
   #bustr-form.header-wrapper-top input {
     background: linear-gradient(0deg,#111,#000);
     border-radius: 5px;
@@ -469,6 +556,20 @@ const bustrStylesheetHTML = `<style>
   #bustr-form.header-wrapper-top a {
     margin: 0 8px;
   }
+ 
+  #nav-jail {
+    position: relative;
+  }
+  #nav-jail .bustr-mobile-amount {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    line-height: 1;
+    font-size: 11px;
+    font-weight: 700;
+    z-index: 10;
+    pointer-events: none;
+  }
 
   #nav-jail .bustr-stats,
   #bustr-context .bustr-stats {
@@ -477,32 +578,39 @@ const bustrStylesheetHTML = `<style>
   #nav-jail .bustr-stats span {
     margin-left: unset;
   }
-
-  #bustr-context.contextMenu___bjhoL {
+ 
+  #bustr-context.bustr-context-menu {
     display: none;
-    left: unset;
+    position: absolute;
     right: -92px;
-    padding: 0 8px;
+    padding: 2px 10px;
     z-index: 9999;
+    align-items: center;
+    background: #373636;
+    color: #fff;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,.5);
   }
-  .contextMenuActive___e6i_B #bustr-context.contextMenu___bjhoL {
+  #bustr-context.bustr-context-menu.bustr-show,
+  [class*="contextMenuActive___"] #bustr-context.bustr-context-menu {
     display: flex;
   }
-  #bustr-context.contextMenu___bjhoL .arrow___tKP13 {
-    right: unset;
+  @media (hover: hover) {
+    #nav-jail:hover + #bustr-context.bustr-context-menu { display: flex; }
+  }
+  #bustr-context .bustr-arrow {
+    position: absolute;
     left: -6px;
+    top: 50%;
+    margin-top: -8px;
+    width: 0;
+    height: 0;
+    border-style: solid;
     border-width: 8px 6px 8px 0;
-    border-color: transparent #444 transparent transparent;
-  }
-  #bustr-context.contextMenu___bjhoL .arrow___tKP13:before {
     border-color: transparent #373636 transparent transparent;
-    border-width: 6px 5px 6px 0;
-    content: "";
-    left: unset;
-    right: -6px;
-    top: -6px;
   }
-
+ 
   #prefs-tab-menu #bustr-settings {
     display: none;
   }
@@ -515,7 +623,7 @@ const bustrStylesheetHTML = `<style>
     padding: 1px 5px;
     text-align: center;
   }
-
+ 
   #bustr-settings-dropdown:hover {
     background: #fff;
   }
@@ -530,7 +638,7 @@ const bustrStylesheetHTML = `<style>
     background: #444;
     color: #999
   }
-
+ 
   #body .users-list-title {
     display: flex;
     justify-content: start;
@@ -553,7 +661,7 @@ const bustrStylesheetHTML = `<style>
     width: 79px;
     text-align: center;
   }
-
+ 
   #body .user-info-list-wrap > li .info-wrap .hardness {
     display: block; 
     text-align: center;
@@ -561,7 +669,7 @@ const bustrStylesheetHTML = `<style>
   #body .user-info-list-wrap > li .info-wrap .hardness span.title {
     display: none;
   }
-
+ 
   #body .user-info-list-wrap {
     display: flex;
     flex-direction: column;
@@ -574,7 +682,7 @@ const bustrStylesheetHTML = `<style>
     justify-content: start; 
     align-items: center;
   }
-
+ 
   #body .user-info-list-wrap > li .info-wrap {
     display: flex; 
     flex-wrap: wrap;
@@ -593,7 +701,7 @@ const bustrStylesheetHTML = `<style>
   #body .user-info-list-wrap > li .info-wrap .hardness {
     width: 50px;
   }
-
+ 
   @media screen and (max-width:1000px) {
     #bustr-form.header-wrapper-top h2 {
       width: 148px;
@@ -646,25 +754,25 @@ function renderBustrStylesheet() {
   const headEl = document.querySelector('head');
   headEl.insertAdjacentHTML('beforeend', bustrStylesheetHTML);
 }
-
+ 
 function renderBustrColorClass(availableBusts) {
   const redLimit = typeof getUserSettings().reminderLimits.redLimit === 'number' ? getUserSettings().reminderLimits.redLimit : 0;
   const greenLimit = typeof getUserSettings().reminderLimits.greenLimit === 'number' ? getUserSettings().reminderLimits.greenLimit : 3;
-
+ 
   if (+availableBusts <= redLimit) {
     if (document.body.classList.contains('bustr--red')) return;
     document.body.classList.add('bustr--red');
     document.body.classList.remove('available___ZS04X', 'bustr--green', 'bustr--orange');
     return;
   }
-
+ 
   if (+availableBusts >= greenLimit) {
     if (document.body.classList.contains('bustr--green')) return;
     document.body.classList.add('available___ZS04X', 'bustr--green');
     document.body.classList.remove('bustr--orange', 'bustr--red');
     return;
   }
-
+ 
   if (availableBusts > redLimit && availableBusts < greenLimit) {
     if (document.body.classList.contains('bustr--orange')) return;
     document.body.classList.add('bustr--orange');
@@ -686,27 +794,30 @@ function renderBustrForm() {
           <a href="#" id="bustr-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
         </div>
       </div>`;
-
+ 
   topHeaderBannerEl.insertAdjacentHTML('afterbegin', bustrFormHTML);
 }
-
+ 
 function dismountBustrForm() {
   document.querySelector('#bustr-form').remove();
 }
-
+ 
 function renderBustrStats(statsObj) {
   for (const [key, value] of Object.entries(statsObj)) {
     const statsElArr = [...document.querySelectorAll(`.bustr-stats__${key}`)];
     statsElArr.forEach((el) => (el.textContent = value));
   }
 }
-
+ 
 async function requireElement(selectors) {
   try {
     await new Promise((res, rej) => {
-      if (document.querySelector(selectors)) res();
-
-      maxCycles = 500;
+      if (document.querySelector(selectors)) {
+        res();
+        return;
+      }
+ 
+      const maxCycles = 500;
       let current = 1;
       const interval = setInterval(() => {
         if (document.querySelector(selectors)) {
@@ -724,56 +835,75 @@ async function requireElement(selectors) {
     console.error(err);
   }
 }
-
+ 
 //// Desktop view
 async function renderBustrDesktopView() {
   try {
     await requireElement('#nav-jail a');
     const jailLinkEl = document.querySelector('#nav-jail a');
     if (jailLinkEl.querySelector('.bustr-stats')) return;
-
+ 
     const statsHTML = `
         <span class="amount___p8QZX bustr-stats">
           <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
         </span>`;
-
+ 
     jailLinkEl.insertAdjacentHTML('beforeend', statsHTML);
   } catch (err) {
     console.error(err);
   }
 }
-
+ 
 //// Mobile view
 function renderMobileBustrNotification() {
-  const jailLinkEl = document.querySelector('#nav-jail a');
+  const navJailEl = document.querySelector('#nav-jail');
 
   const notificationHTML = `
-    <div class="mobileAmount___ua3ye bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
-  jailLinkEl.insertAdjacentHTML('beforebegin', notificationHTML);
+    <div class="bustr-mobile-amount bustr-stats"><span class="bustr-stats__availableBusts">#</span></div>`;
+  navJailEl.insertAdjacentHTML('beforeend', notificationHTML);
 }
-
+ 
 async function renderBustrMobileView() {
   try {
     await requireElement('#nav-jail a');
     const jailLinkEl = document.querySelector('#nav-jail');
-    if (jailLinkEl.querySelector('.bustr-stats')) return;
-
+    if (jailLinkEl.querySelector('.bustr-mobile-amount')) return;
+ 
     renderMobileBustrNotification();
-
+ 
     const bustrContextMenuHTML = `
-      <div id="bustr-context" class='contextMenu___bjhoL bustr-context-menu'>
-        <span class='linkName___FoKha bustr-stats'>
+      <div id="bustr-context" class='bustr-context-menu'>
+        <span class='bustr-stats'>
         <span class="bustr-stats__penaltyScore">#</span> / <span class="bustr-stats__penaltyThreshold">#</span> : <span class="bustr-stats__availableBusts">#</span>
         </span>
-        <span class='arrow___tKP13 bustr-arrow'></span>
+        <span class='bustr-arrow'></span>
       </div>`;
-
+ 
     jailLinkEl.insertAdjacentHTML('afterend', bustrContextMenuHTML);
+ 
+    const jailAnchor = jailLinkEl.querySelector('a');
+    const popupEl = document.querySelector('#bustr-context');
+    if (jailAnchor && popupEl) {
+      let lpTimer = null;
+      let lpFired = false;
+      jailAnchor.addEventListener('touchstart', () => {
+        lpFired = false;
+        lpTimer = setTimeout(() => { lpFired = true; popupEl.classList.add('bustr-show'); }, 350);
+      }, { passive: true });
+      jailAnchor.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
+      jailAnchor.addEventListener('touchend', (e) => { clearTimeout(lpTimer); if (lpFired) e.preventDefault(); });
+      jailAnchor.addEventListener('click', (e) => { if (lpFired) { e.preventDefault(); e.stopPropagation(); lpFired = false; } });
+      document.addEventListener('touchstart', (e) => {
+        if (popupEl.classList.contains('bustr-show') && !jailAnchor.contains(e.target) && !popupEl.contains(e.target)) {
+          popupEl.classList.remove('bustr-show');
+        }
+      }, { passive: true });
+    }
   } catch (err) {
     console.error(err);
   }
 }
-
+ 
 function renderHardnessJailView() {
   const headingsContainerEl = document.querySelector('.users-list-title');
   const hardnessTitleHTML = `
@@ -781,7 +911,7 @@ function renderHardnessJailView() {
   if (!headingsContainerEl.querySelector('span.hardness')) {
     headingsContainerEl.children[3].insertAdjacentHTML('afterend', hardnessTitleHTML);
   }
-
+ 
   const playerRowsArr = [...document.querySelectorAll('.user-info-list-wrap > li')];
   playerRowsArr.forEach((el) => {
     const playerInfoContainerEl = el.querySelector('.info-wrap');
@@ -790,23 +920,23 @@ function renderHardnessJailView() {
         <span class="title bold">HARDNESS</span>
         <span class="bustr-hardness-score">#####</span>
       </span>`;
-
+ 
     if (!playerInfoContainerEl) return;
     if (!playerInfoContainerEl.querySelector('.hardness.reason')) {
       playerInfoContainerEl.children[2].insertAdjacentHTML('afterend', hardnessScoreHTML);
     }
   });
 }
-
+ 
 ////////  CONTROLLERS  ////////
 async function initController() {
   try {
     renderBustrStylesheet();
-
+ 
     if (isPDA() && !getApiKey()) {
       setApiKey(PDA_API_KEY);
     }
-
+ 
     if (getMyViewportWidthType() === 'Desktop') {
       await renderBustrDesktopView();
       setRenderedView('Desktop');
@@ -815,12 +945,12 @@ async function initController() {
       await renderBustrMobileView();
       setRenderedView('Mobile');
     }
-
+ 
     if (getApiKey()) return;
-
+ 
     // if not saved render bustr form
     renderBustrForm();
-
+ 
     // set event liseners
     //// Event listeners
     document.querySelector('#bustr-form__submit').addEventListener('click', submitFormCallback);
@@ -834,29 +964,27 @@ async function initController() {
     console.error(err);
   }
 }
-
+ 
 //// load
 async function loadController() {
   try {
     // guard clause if no api key
     if (!getApiKey()) return;
-
-    if (loadGlobalBustrState()) {
-      loadGlobalBustrState();
-    }
-
+ 
+    loadGlobalBustrState();
+ 
     // fetch data
     const data = await fetchBustsData(getApiKey());
     setTimestampsArray(createTimestampsArray(data));
-
+ 
     const statsObj = calcBustrStats(getTimestampsArray());
     setPenaltyScore(statsObj.penaltyScore);
     setPenaltyThreshold(statsObj.penaltyThreshold);
     setAvailableBusts(statsObj.availableBusts);
-
+ 
     // render color class
     renderBustrColorClass(getAvailableBusts());
-
+ 
     // render stats
     renderBustrStats(statsObj);
   } catch (err) {
@@ -864,23 +992,23 @@ async function loadController() {
     console.error(err);
   }
 }
-
+ 
 function successfulBustUpdateController() {
   createJailMutationObserver();
 }
-
+ 
 function refreshStatsController() {
   const statsRefreshRate = typeof getUserSettings().statsRefreshRate === 'number' && getUserSettings().statsRefreshRate > 0 ? getUserSettings().statsRefreshRate : 60;
   setInterval(async () => {
     await loadController();
-  }, statsRefreshRate * 1000 || 60000);
+  }, statsRefreshRate * 1000);
 }
-
+ 
 async function viewportResizeController() {
   try {
     visualViewport.addEventListener('resize', async (e) => {
       if (!getRenderedView()) return;
-
+ 
       const viewportWidthType = getMyViewportWidthType();
       if (viewportWidthType !== getRenderedView()) {
         initController();
@@ -891,14 +1019,16 @@ async function viewportResizeController() {
     console.error(error); // TEST
   }
 }
-
+ 
 function hardnessScoreController() {
   if (window.location.pathname !== '/jailview.php') return;
   createHardnessScoreObserver();
-
+ 
   renderHardnessJailView();
+  wireHardnessSortToggle();
+  renderSortToggleBar();
   const playersArr = [...document.querySelectorAll('ul.user-info-list-wrap > li')];
-
+ 
   if (playersArr[0].classList.contains('last')) return;
   for (const playerEl of playersArr) {
     const [level, durationInHours] = getLevelJailDurationInfo(playerEl);
@@ -907,17 +1037,17 @@ function hardnessScoreController() {
     sortByHardnessScore(playerEl, hardnessScore);
   }
 }
-
+ 
 //// Promise race conditions
 // necessary as PDA scripts are inject after window.onload
 const PDAPromise = new Promise((res, rej) => {
   if (document.readyState === 'complete') res();
 });
-
+ 
 const browserPromise = new Promise((res, rej) => {
   window.addEventListener('load', () => res());
 });
-
+ 
 (async function () {
   try {
     await Promise.race([PDAPromise, browserPromise]);
