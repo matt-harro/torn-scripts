@@ -1,23 +1,24 @@
 // ==UserScript==
 // @name         TORN: Display Crime Chain
 // @namespace    http://torn.city.com.dot.com.com
-// @version      1.0.6
-// @description  Calculates and displays your current crime chain
-// @author       Ironhydedragon[2428902]
+// @version      1.0.7
+// @description  Calculates and displays your current crime chain (Crimes 2.0 DOM-compat patch)
+// @author       Ironhydedragon[2428902] 
+// @author       Contributors: RussianRob
 // @match        https://www.torn.com/page.php?sid=crimes*
 // @license      MIT
 // @run-at       document-end
 // ==/UserScript==
 
 let crimeChain = 0;
+let lastSeenTs = 0; // newest crime-log timestamp already counted (for live updates)
+let ccBase = null;  // baseline {type, s, f, c} of the on-page success/fail/critical tallies
 
 const redFlame = '#e64d1a';
 
 const PDA_API_KEY = '###PDA-APIKEY###';
 function isPDA() {
-  const PDATestRegex = !/^(###).+(###)$/.test(PDA_API_KEY);
-  console.log('REGEX', PDATestRegex); // TEST
-  return PDATestRegex;
+  return !/^(###).+(###)$/.test(PDA_API_KEY);
 }
 
 function setApiKey(apiKey) {
@@ -104,19 +105,20 @@ function renderStylesheet() {
 
 function renderApiForm() {
   const topHeaderBannerEl = document.querySelector('#topHeaderBanner');
+  if (!topHeaderBannerEl || document.querySelector('#api-form')) return;
   const apiFormHTML = `
       <div id="api-form" class="header-wrapper-top">
-        <div class="container clear-fix"> 
+        <div class="container clear-fix">
           <h2>API Key</h2>
           <input
             id="api-form__input"
-            type="text"
-            placeholder="Enter a full-acces API key..."
+            type="password"
+            autocomplete="off"
+            placeholder="Enter a limited-access API key..."
           />
           <a href="#" id="api-form__submit"  type="btn" disabled><span class="link-text">Submit</span</button>
         </div>
       </div>`;
-  if (document.querySelector('#api-form')) return;
   topHeaderBannerEl.insertAdjacentHTML('afterbegin', apiFormHTML);
 }
 function dismountApiForm() {
@@ -124,38 +126,24 @@ function dismountApiForm() {
 }
 
 function renderCrimeChainHTML() {
-  console.log('🖼️ RENDERING CHAIN HTML'); // TEST
-  const crimeChainHTML = `
-    <div class="linksContainer___LiOTN">
-      <span aria-labelledby="crime-chain" class="linkContainer___X16y4 inRow___VfDnd greyLineV___up8VP link-container-CrimesHub" target="_self" id="crime-chain"
-        ><span class="iconContainer___D5z6F linkIconContainer___Ep0LO"
-          ><svg fill="#777777" height="17px" width="16px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 31.891 31.891" xml:space="preserve">
-            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-            <g id="SVGRepo_iconCarrier">
-              <g>
-                <path
-                  d="M30.543,5.74l-4.078-4.035c-1.805-1.777-4.736-1.789-6.545-0.02l-4.525,4.414c-1.812,1.768-1.82,4.648-0.02,6.424 l2.586-2.484c-0.262-0.791,0.061-1.697,0.701-2.324l2.879-2.807c0.912-0.885,2.375-0.881,3.275,0.01l2.449,2.42 c0.9,0.891,0.896,2.326-0.01,3.213l-2.879,2.809c-0.609,0.594-1.609,0.92-2.385,0.711l-2.533,2.486 c1.803,1.781,4.732,1.789,6.545,0.02l4.52-4.41C32.34,10.396,32.346,7.519,30.543,5.74z"
-                ></path>
-                <path
-                  d="M13.975,21.894c0.215,0.773-0.129,1.773-0.752,2.381l-2.689,2.627c-0.922,0.9-2.414,0.895-3.332-0.012l-2.498-2.461 c-0.916-0.906-0.91-2.379,0.012-3.275l2.691-2.627c0.656-0.637,1.598-0.961,2.42-0.689l2.594-2.57 c-1.836-1.811-4.824-1.82-6.668-0.02l-4.363,4.26c-1.846,1.803-1.855,4.734-0.02,6.549l4.154,4.107 c1.834,1.809,4.82,1.818,6.668,0.018l4.363-4.26c1.844-1.805,1.852-4.734,0.02-6.547L13.975,21.894z"
-                ></path>
-                <path d="M11.139,20.722c0.611,0.617,1.611,0.623,2.234,0.008l7.455-7.416c0.621-0.617,0.625-1.615,0.008-2.234 c-0.613-0.615-1.611-0.619-2.23-0.006l-7.457,7.414C10.529,19.103,10.525,20.101,11.139,20.722z"></path>
-              </g>
-            </g></svg></span
-        ><span class="linkTitle____NPyM"><span aria-label="current crime chain" id="crime-chain__current">###</span></span></span
-      >
-    </div>
-    `;
-  const titleContainerEl = document.querySelector('.crimes-app .heading___dOsMq');
-  // const titleContainerEl = document.querySelector('.crimes-app .titleContainer___QrlWP');
+  // Torn regenerates the ___<hash> suffix on every crimes-app deploy, and the old
+  // links/hub markup was removed in Crimes 2.0. Anchor on the stable class PREFIX
+  // and render a self-styled badge that depends on none of Torn's hashed classes.
+  const titleContainerEl = document.querySelector('.crimes-app [class*="heading___"]');
+  if (!titleContainerEl) return;
   if (document.querySelector('#crime-chain')) return;
+  const crimeChainHTML = `
+    <span id="crime-chain" aria-labelledby="crime-chain" style="display:inline-flex;align-items:center;gap:6px;margin-left:14px;vertical-align:middle;font-weight:700;color:${redFlame};">
+      <svg fill="${redFlame}" height="15" width="14" viewBox="0 0 31.891 31.891" xmlns="http://www.w3.org/2000/svg"><g><path d="M30.543,5.74l-4.078-4.035c-1.805-1.777-4.736-1.789-6.545-0.02l-4.525,4.414c-1.812,1.768-1.82,4.648-0.02,6.424 l2.586-2.484c-0.262-0.791,0.061-1.697,0.701-2.324l2.879-2.807c0.912-0.885,2.375-0.881,3.275,0.01l2.449,2.42 c0.9,0.891,0.896,2.326-0.01,3.213l-2.879,2.809c-0.609,0.594-1.609,0.92-2.385,0.711l-2.533,2.486 c1.803,1.781,4.732,1.789,6.545,0.02l4.52-4.41C32.34,10.396,32.346,7.519,30.543,5.74z"></path><path d="M13.975,21.894c0.215,0.773-0.129,1.773-0.752,2.381l-2.689,2.627c-0.922,0.9-2.414,0.895-3.332-0.012l-2.498-2.461 c-0.916-0.906-0.91-2.379,0.012-3.275l2.691-2.627c0.656-0.637,1.598-0.961,2.42-0.689l2.594-2.57 c-1.836-1.811-4.824-1.82-6.668-0.02l-4.363,4.26c-1.846,1.803-1.855,4.734-0.02,6.549l4.154,4.107 c1.834,1.809,4.82,1.818,6.668,0.018l4.363-4.26c1.844-1.805,1.852-4.734,0.02-6.547L13.975,21.894z"></path><path d="M11.139,20.722c0.611,0.617,1.611,0.623,2.234,0.008l7.455-7.416c0.621-0.617,0.625-1.615,0.008-2.234 c-0.613-0.615-1.611-0.619-2.23-0.006l-7.457,7.414C10.529,19.103,10.525,20.101,11.139,20.722z"></path></g></svg>
+      <span aria-label="current crime chain" id="crime-chain__current" title="Current crime chain">###</span>
+    </span>`;
   titleContainerEl.insertAdjacentHTML('afterend', crimeChainHTML);
 }
 
 function renderCrimeChainCurrent() {
-  console.log('⛓️', crimeChain); // TEST
-  document.querySelector('#crime-chain__current').textContent = Math.floor(crimeChain);
+  const el = document.querySelector('#crime-chain__current');
+  if (!el) return;
+  el.textContent = Math.floor(crimeChain);
 }
 
 async function fetchCrimes(toTimestamp) {
@@ -178,8 +166,11 @@ async function calcCrimeChain() {
     }
     dataCollectorUnshifter(initialData);
     while (dataCollector.filter((log) => log.title.match(/Crime critical fail/i)).length < 1) {
+      if (!dataCollector.length) break; // no crime logs at all — don't deref [0]
+      const before = dataCollector.length;
       const data = await fetchCrimes(dataCollector[0].timestamp - 1);
       dataCollectorUnshifter(data);
+      if (dataCollector.length === before) break; // no older entries returned — stop (avoid infinite API loop)
     }
 
     for (const d of dataCollector) {
@@ -193,8 +184,9 @@ async function calcCrimeChain() {
         crimeChain = 0;
       }
     }
+    lastSeenTs = dataCollector.reduce((mx, d) => Math.max(mx, d.timestamp || 0), lastSeenTs);
   } catch (error) {
-    console.error(error); // TEST
+    console.error('[crime-chain] failed to calculate chain:', error);
   }
 }
 
@@ -203,13 +195,14 @@ function submitFormCallback() {
   const inputEl = document.querySelector('#api-form__input');
   const submitBtnEl = document.querySelector('#api-form__submit');
 
-  const apiKey = inputEl.value;
+  const apiKey = inputEl.value.trim();
   if (apiKey.length !== 16) {
     inputEl.style.border = `2px solid ${redFlame}`;
     submitBtnEl.disabled = true;
     return;
   }
   setApiKey(apiKey);
+  inputEl.value = ''; // don't leave the key sitting in the DOM input
   dismountApiForm();
   window.location.reload();
 }
@@ -217,11 +210,11 @@ function submitFormCallback() {
 function inputValidatorCallback(event) {
   const inputEl = document.querySelector('#api-form__input');
   const submitBtnEl = document.querySelector('#api-form__submit');
-  if (event.target.value.length === 16) {
+  if (event.target.value.trim().length === 16) {
     submitBtnEl.disabled = false;
     inputEl.style.border = '1px solid #444';
   }
-  if (event.target.value.length !== 16) {
+  if (event.target.value.trim().length !== 16) {
     submitBtnEl.disabled = true;
   }
 }
@@ -230,7 +223,6 @@ function updateCrimeCallback(mutationList) {
   for (const mutation of mutationList) {
     if (mutation.addedNodes.length > 0 && mutation.addedNodes[0].classList && [...mutation.addedNodes[0].classList].join(' ').match(/crimes-outcome-/)) {
       const outcome = [...mutation.addedNodes[0].classList].join(' ').match(/(?<=crimes-outcome-)\w+/gi)[0];
-      console.log('👀', outcome); // TEST
 
       if (outcome === 'success') {
         crimeChain++;
@@ -251,7 +243,6 @@ function updateCrimeCallback(mutationList) {
 function apiKeyFormController() {
   renderApiForm();
 
-  // set event liseners
   //// Event listeners
   document.querySelector('#api-form__submit').addEventListener('click', submitFormCallback);
   document.querySelector('#api-form__input').addEventListener('input', inputValidatorCallback);
@@ -267,12 +258,10 @@ function initController() {
   renderStylesheet();
 
   if (isPDA()) {
-    console.log('🌟 IS PDA!!!!!', PDA_API_KEY); // TEST
     setApiKey(PDA_API_KEY);
   }
 
   if (!getApiKey()) {
-    console.log('noAPIKey found'); // TEST
     apiKeyFormController();
     return;
   }
@@ -285,9 +274,113 @@ async function loadController() {
   renderCrimeChainCurrent();
 }
 
+async function pollLatestCrime() {
+  try {
+    const data = await fetchCrimes();
+    const fresh = Object.values((data && data.log) || {})
+      .filter((l) => l && typeof l.title === 'string' && /Crime (success|fail|critical fail)/i.test(l.title) && l.timestamp > lastSeenTs)
+      .sort((a, b) => a.timestamp - b.timestamp);
+    for (const e of fresh) {
+      if (e.title.match(/Crime critical fail/i)) crimeChain = 0;
+      else if (e.title.match(/Crime fail/i)) crimeChain = crimeChain ? crimeChain / 2 : 0;
+      else if (e.title.match(/Crime success/i)) crimeChain++;
+      lastSeenTs = e.timestamp;
+    }
+    if (fresh.length) renderCrimeChainCurrent();
+  } catch (error) {
+    console.error('[crime-chain] poll failed:', error);
+  }
+}
+
 function updateCrimeChainController() {
-  const updateCrimeObserver = new MutationObserver(updateCrimeCallback);
-  updateCrimeObserver.observe(document, { attributes: false, childList: true, subtree: true });
+  // Crimes 2.0 dropped the old crimes-outcome-* class this used to watch, so instead
+  // re-read the API crimes log after each crime (DOM-structure-independent). Fast path
+  // = hook the page's own crime request; safety net = a slow poll.
+  let refreshTimer = null;
+  const scheduleRefresh = () => {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(pollLatestCrime, 1200); // let the log settle after the crime
+  };
+
+  const origFetch = window.fetch;
+  if (typeof origFetch === 'function') {
+    window.fetch = function (input) {
+      const url = input && input.url ? input.url : String(input || '');
+      const out = origFetch.apply(this, arguments);
+      if (/crimes/i.test(url) && !/api\.torn\.com/i.test(url)) {
+        try { out.then(() => scheduleRefresh(), () => {}); } catch (e) {}
+      }
+      return out;
+    };
+  }
+
+  const X = window.XMLHttpRequest;
+  if (X && X.prototype) {
+    const oOpen = X.prototype.open;
+    const oSend = X.prototype.send;
+    X.prototype.open = function (m, url) { this.__cc = String(url || ''); return oOpen.apply(this, arguments); };
+    X.prototype.send = function () {
+      if (this.__cc && /crimes/i.test(this.__cc) && !/api\.torn\.com/i.test(this.__cc)) {
+        this.addEventListener('load', scheduleRefresh);
+      }
+      return oSend.apply(this, arguments);
+    };
+  }
+
+  setInterval(pollLatestCrime, 10000); // safety net while on the crimes page
+}
+
+// INSTANT path: Crimes 2.0 shows live per-crime tallies (successes/fails/criticalFails)
+// that tick the moment you play — no reload, no cached log. Watch them and apply the
+// same chain math the instant a counter moves; advance lastSeenTs so the log poll
+// doesn't re-count the same crime.
+function readCrimeCounters() {
+  const sEl = document.querySelector('[class*="successes___"]');
+  const cEl = document.querySelector('[class*="criticalFails___"]');
+  let fEl = null;
+  const rc = document.querySelectorAll('[class*="resultCount___"]');
+  for (const el of rc) { const cls = String(el.className || ''); if (/fails_/.test(cls) && !/criticalFails/.test(cls)) fEl = el; }
+  if (!sEl || !fEl || !cEl) return null;
+  const num = (el) => { const t = String(el.textContent || '').replace(/[^\d]/g, ''); return t ? parseInt(t, 10) : 0; };
+  return { type: location.hash, s: num(sEl), f: num(fEl), c: num(cEl) };
+}
+
+function crimeCounterTick() {
+  const cur = readCrimeCounters();
+  if (!cur) { ccBase = null; return; }                              // hub / counters not present
+  if (!ccBase || ccBase.type !== cur.type) { ccBase = cur; return; } // first sight or crime-type switch — baseline only
+  const dS = cur.s - ccBase.s, dF = cur.f - ccBase.f, dC = cur.c - ccBase.c;
+  if (dS <= 0 && dF <= 0 && dC <= 0) { ccBase = cur; return; }       // reset/rollback — re-baseline, no chain change
+  if (dC > 0) crimeChain = 0;
+  else if (dF > 0) { for (let k = 0; k < dF; k++) crimeChain = crimeChain ? crimeChain / 2 : 0; }
+  else crimeChain += dS;
+  ccBase = cur;
+  lastSeenTs = Math.floor(Date.now() / 1000);
+  renderCrimeChainCurrent();
+}
+
+function crimeCounterController() {
+  ccBase = readCrimeCounters();
+  setInterval(crimeCounterTick, 300);
+}
+
+function ensureBadge() {
+  if (!getApiKey()) return;
+  renderCrimeChainHTML();    // idempotent: bails if the heading anchor is absent or badge exists
+  renderCrimeChainCurrent(); // idempotent: bails if the value node is absent
+}
+
+function badgeController() {
+  // The crimes app is a React SPA that mounts AFTER document-end and re-renders on
+  // hub<->crime navigation, so render the badge once its anchor exists and re-add it
+  // whenever React wipes it. Both render helpers are idempotent, so this is cheap.
+  let t = null;
+  const obs = new MutationObserver(() => {
+    clearTimeout(t);
+    t = setTimeout(ensureBadge, 250);
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+  ensureBadge();
 }
 
 //// Promise race conditions
@@ -302,14 +395,15 @@ const browserPromise = new Promise((res, rej) => {
 
 (async () => {
   try {
-    console.log('⛓️ Crime chain script ON!'); // TEST
     await Promise.race([PDAPromise, browserPromise]);
     initController();
     if (getApiKey()) {
+      badgeController();
       await loadController();
       updateCrimeChainController();
+      crimeCounterController();
     }
   } catch (error) {
-    console.error(error); // TEST
+    console.error('[crime-chain] init failed:', error);
   }
 })();
